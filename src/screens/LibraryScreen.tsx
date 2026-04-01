@@ -1,0 +1,650 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  TextInput,
+  FlatList,
+  Dimensions,
+} from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+
+const { width } = Dimensions.get("window")
+
+interface AudioBook {
+  id: string
+  title: string
+  author: string
+  thumbnail: string
+  chaptersCount: number
+  totalDuration: number
+  level: string
+  isDownloaded: boolean
+  progress: number
+}
+
+interface Course {
+  id: string
+  title: string
+  instructor: string
+  thumbnail: string
+  modulesCount: number
+  totalDuration: number
+  level: string
+  isEnrolled: boolean
+  progress: number
+}
+
+interface FeaturedLesson {
+  id: string
+  title: string
+  thumbnail: string
+  duration: number
+  courseName: string
+}
+
+export default function LibraryScreen({ navigation }: any) {
+  const [activeTab, setActiveTab] = useState<"audiobooks" | "courses">("audiobooks")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [audioBooks, setAudioBooks] = useState<AudioBook[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [featuredLessons, setFeaturedLessons] = useState<FeaturedLesson[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadLibraryData()
+  }, [])
+
+  const getFilteredData = () => {
+    if (!searchQuery.trim()) {
+      return activeTab === "audiobooks" ? audioBooks : courses
+    }
+
+    const query = searchQuery.toLowerCase()
+    if (activeTab === "audiobooks") {
+      return audioBooks.filter((book) =>
+        book.title.toLowerCase().includes(query)
+      )
+    } else {
+      return courses.filter((course) =>
+        course.title.toLowerCase().includes(query)
+      )
+    }
+  }
+
+  const loadLibraryData = async () => {
+    try {
+      setLoading(true)
+      // Import the API service
+      const { apiService } = await import("../services/api")
+      
+      // Load audiobooks, courses, and featured lessons from API
+      const [audiobooksResponse, coursesResponse, lessonsResponse] = await Promise.all([
+        apiService.getAudiobooks({ page: 1, limit: 50 }),
+        apiService.getCourses({ page: 1, limit: 50 }),
+        apiService.getLessons({ page: 1, limit: 10 }) // Get first 10 lessons as featured
+      ])
+
+      console.log({ audiobooksResponse, coursesResponse, lessonsResponse })
+
+      // Transform audiobooks data
+      const audiobooksData = (audiobooksResponse.audiobooks || []).map((audiobook: any) => ({
+        id: audiobook.id,
+        title: audiobook.title,
+        author: "Cô Thúy", // TODO: Add author field to audiobook model
+        thumbnail: audiobook.coverImage || "/placeholder.svg",
+        chaptersCount: audiobook._count?.chapters || 0,
+        totalDuration: 0, // TODO: Calculate from chapters
+        level: audiobook.level || "Beginner",
+        isDownloaded: false, // TODO: Track downloads locally
+        progress: 0, // TODO: Calculate from user progress
+      }))
+      
+      setAudioBooks(audiobooksData)
+
+      // Transform courses data
+      const coursesData = (coursesResponse.courses || []).map((course: any) => ({
+        id: course.id,
+        title: course.title,
+        instructor: "Cô Thúy", // TODO: Add instructor field to course model
+        thumbnail: course.coverImage || "/placeholder.svg",
+        modulesCount: course._count?.modules || 0,
+        totalDuration: 0, // TODO: Calculate from lessons
+        level: course.level || "Beginner",
+        isEnrolled: course.isPublished, // TODO: Track user enrollment
+        progress: 0, // TODO: Calculate from user progress
+      }))
+      
+      setCourses(coursesData)
+
+      // Transform featured lessons
+      const featuredLessonsData = (lessonsResponse.lessons || []).slice(0, 5).map((lesson: any) => {
+        let courseName = "Unknown"
+        if (lesson.module?.course) {
+          courseName = lesson.module.course.title
+        } else if (lesson.chapter?.audioBook) {
+          courseName = lesson.chapter.audioBook.title
+        }
+        
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          thumbnail: lesson.coverImage || lesson.avatar || "/placeholder.svg",
+          duration: (lesson.duration || 0) * 1000,
+          courseName: courseName,
+        }
+      })
+      
+      setFeaturedLessons(featuredLessonsData)
+    } catch (error) {
+      console.error("Error loading library data:", error)
+      // Initialize with empty data on error
+      setAudioBooks([])
+      setCourses([])
+      setFeaturedLessons([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatDuration = (milliseconds: number) => {
+    const hours = Math.floor(milliseconds / 3600000)
+    const minutes = Math.floor((milliseconds % 3600000) / 60000)
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    }
+    return `${minutes}m`
+  }
+
+  const renderAudioBook = ({ item: book }: { item: AudioBook }) => (
+    <TouchableOpacity
+      style={styles.bookCard}
+      onPress={() => navigation.navigate("AudioBookDetail", { bookId: book.id })}
+    >
+      <Image source={{ uri: book.thumbnail }} style={styles.bookCover} />
+      <View style={styles.bookInfo}>
+        <Text style={styles.bookTitle} numberOfLines={2}>
+          {book.title}
+        </Text>
+        <Text style={styles.bookAuthor}>bởi {book.author}</Text>
+
+        <View style={styles.bookMeta}>
+          <View style={styles.bookMetaItem}>
+            <Ionicons name="book-outline" size={14} color="#666" />
+            <Text style={styles.bookMetaText}>{book.chaptersCount} chương</Text>
+          </View>
+          <View style={styles.bookMetaItem}>
+            <Ionicons name="time-outline" size={14} color="#666" />
+            <Text style={styles.bookMetaText}>{formatDuration(book.totalDuration)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.bookLevel}>
+          <Text style={styles.bookLevelText}>{book.level}</Text>
+        </View>
+
+        {book.progress > 0 && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${book.progress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{book.progress}%</Text>
+          </View>
+        )}
+
+        <View style={styles.bookActions}>
+          {book.isDownloaded && (
+            <View style={styles.downloadedBadge}>
+              <Ionicons name="download" size={12} color="#34C759" />
+              <Text style={styles.downloadedText}>Đã tải</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  )
+
+  const renderCourse = ({ item: course }: { item: Course }) => (
+    <TouchableOpacity
+      style={styles.courseCard}
+      onPress={() => navigation.navigate("CourseDetail", { courseId: course.id })}
+    >
+      <Image source={{ uri: course.thumbnail }} style={styles.courseImage} />
+
+      {course.isEnrolled && (
+        <View style={styles.enrolledBadge}>
+          <Text style={styles.enrolledText}>Đã đăng ký</Text>
+        </View>
+      )}
+
+      <View style={styles.courseInfo}>
+        <Text style={styles.courseTitle} numberOfLines={2}>
+          {course.title}
+        </Text>
+        <Text style={styles.courseInstructor}>bởi {course.instructor}</Text>
+
+        <View style={styles.courseMeta}>
+          <View style={styles.courseMetaItem}>
+            <Ionicons name="layers-outline" size={14} color="#666" />
+            <Text style={styles.courseMetaText}>{course.modulesCount} modules</Text>
+          </View>
+          <View style={styles.courseMetaItem}>
+            <Ionicons name="time-outline" size={14} color="#666" />
+            <Text style={styles.courseMetaText}>{formatDuration(course.totalDuration)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.courseLevel}>
+          <Text style={styles.courseLevelText}>{course.level}</Text>
+        </View>
+
+        {course.progress > 0 && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${course.progress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{course.progress}%</Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  )
+
+  const renderFeaturedLesson = ({ item: lesson }: { item: FeaturedLesson }) => (
+    <TouchableOpacity
+      style={styles.featuredLessonCard}
+      onPress={() => navigation.navigate("LessonDetail", { lessonId: lesson.id })}
+    >
+      <Image source={{ uri: lesson.thumbnail }} style={styles.featuredLessonImage} />
+      <View style={styles.featuredLessonInfo}>
+        <Text style={styles.featuredLessonTitle} numberOfLines={2}>
+          {lesson.title}
+        </Text>
+        <Text style={styles.featuredLessonCourse}>{lesson.courseName}</Text>
+        <View style={styles.featuredLessonMeta}>
+          <Ionicons name="time-outline" size={12} color="#666" />
+          <Text style={styles.featuredLessonDuration}>{formatDuration(lesson.duration)}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  )
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Thư viện</Text>
+        <TouchableOpacity style={styles.searchButton}>
+          <Ionicons name="search" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Tìm kiếm audio books, khóa học..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      {/* Featured Lessons */}
+      {featuredLessons.length > 0 && (
+        <View style={styles.featuredSection}>
+          <Text style={styles.sectionTitle}>Bài học nổi bật</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.featuredList}
+          >
+            {featuredLessons.map((lesson) => (
+              <View key={lesson.id}>{renderFeaturedLesson({ item: lesson })}</View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Tabs */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "audiobooks" && styles.activeTab]}
+          onPress={() => setActiveTab("audiobooks")}
+        >
+          <Text style={[styles.tabText, activeTab === "audiobooks" && styles.activeTabText]}>Audio Books</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "courses" && styles.activeTab]}
+          onPress={() => setActiveTab("courses")}
+        >
+          <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText]}>Chương trình học</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      <FlatList
+        data={getFilteredData() as any}
+        renderItem={activeTab === "audiobooks" ? renderAudioBook : (renderCourse as any)}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentList}
+        columnWrapperStyle={styles.row}
+      />
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  searchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 45,
+    fontSize: 16,
+    color: "#333",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    backgroundColor: "white",
+    marginHorizontal: 20,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: "#007AFF",
+  },
+  tabText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  activeTabText: {
+    color: "white",
+  },
+  contentList: {
+    paddingHorizontal: 20,
+  },
+  row: {
+    justifyContent: "space-between",
+  },
+  bookCard: {
+    width: (width - 50) / 2,
+    backgroundColor: "white",
+    borderRadius: 12,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  bookCover: {
+    width: "100%",
+    height: 120,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  bookInfo: {
+    padding: 12,
+  },
+  bookTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  bookAuthor: {
+    fontSize: 12,
+    color: "#007AFF",
+    marginBottom: 8,
+  },
+  bookMeta: {
+    marginBottom: 8,
+  },
+  bookMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  bookMetaText: {
+    fontSize: 11,
+    color: "#666",
+    marginLeft: 4,
+  },
+  bookLevel: {
+    alignSelf: "flex-start",
+    backgroundColor: "#e3f2fd",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  bookLevelText: {
+    fontSize: 10,
+    color: "#1976d2",
+    fontWeight: "600",
+  },
+  progressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  progressBar: {
+    flex: 1,
+    height: 3,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 1.5,
+    marginRight: 6,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#007AFF",
+    borderRadius: 1.5,
+  },
+  progressText: {
+    fontSize: 10,
+    color: "#666",
+    fontWeight: "600",
+  },
+  bookActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  downloadedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e8f5e8",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  downloadedText: {
+    fontSize: 10,
+    color: "#34C759",
+    marginLeft: 2,
+    fontWeight: "600",
+  },
+  courseCard: {
+    width: (width - 50) / 2,
+    backgroundColor: "white",
+    borderRadius: 12,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  courseImage: {
+    width: "100%",
+    height: 100,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  enrolledBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#34C759",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  enrolledText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  courseInfo: {
+    padding: 12,
+  },
+  courseTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  courseInstructor: {
+    fontSize: 12,
+    color: "#007AFF",
+    marginBottom: 8,
+  },
+  courseMeta: {
+    marginBottom: 8,
+  },
+  courseMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  courseMetaText: {
+    fontSize: 11,
+    color: "#666",
+    marginLeft: 4,
+  },
+  courseLevel: {
+    alignSelf: "flex-start",
+    backgroundColor: "#f3e5f5",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  courseLevelText: {
+    fontSize: 10,
+    color: "#7b1fa2",
+    fontWeight: "600",
+  },
+  featuredSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 20,
+    marginBottom: 12,
+  },
+  featuredList: {
+    paddingHorizontal: 20,
+  },
+  featuredLessonCard: {
+    width: 160,
+    backgroundColor: "white",
+    borderRadius: 12,
+    marginRight: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  featuredLessonImage: {
+    width: "100%",
+    height: 90,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  featuredLessonInfo: {
+    padding: 10,
+  },
+  featuredLessonTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  featuredLessonCourse: {
+    fontSize: 11,
+    color: "#007AFF",
+    marginBottom: 6,
+  },
+  featuredLessonMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  featuredLessonDuration: {
+    fontSize: 10,
+    color: "#666",
+    marginLeft: 4,
+  },
+})
