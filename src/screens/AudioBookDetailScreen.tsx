@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAudio } from "../context/AudioContext"
+import { useTranslation } from "react-i18next"
 
 interface AudioBook {
   id: string
@@ -40,6 +41,7 @@ interface Lesson {
 export default function AudioBookDetailScreen({ navigation, route }: any) {
   const { bookId } = route.params
   const { playTrack } = useAudio()
+  const { t } = useTranslation()
   const [audioBook, setAudioBook] = useState<AudioBook | null>(null)
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -85,7 +87,7 @@ export default function AudioBookDetailScreen({ navigation, route }: any) {
         id: audiobookData.id,
         title: audiobookData.title,
         author: "Cô Thúy", // TODO: Add author field to audiobook model
-        description: audiobookData.description || "Chưa có mô tả",
+        description: audiobookData.description || t('audioBookDetail.no_description'),
         thumbnail: audiobookData.coverImage || audiobookData.avatar || "/placeholder.svg",
         totalDuration: totalDuration,
         chaptersCount: chapters.length,
@@ -173,7 +175,7 @@ export default function AudioBookDetailScreen({ navigation, route }: any) {
           <View style={styles.chapterInfo}>
             <Text style={styles.chapterTitle}>{chapter.title}</Text>
             <Text style={styles.chapterDuration}>
-              {chapter.lessons.length} bài • {formatDuration(chapter.duration)}
+              {t('audioBookDetail.lessons_per_chapter', { lessons: chapter.lessons.length, duration: formatDuration(chapter.duration) })}
             </Text>
           </View>
         </View>
@@ -191,7 +193,7 @@ export default function AudioBookDetailScreen({ navigation, route }: any) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Đang tải...</Text>
+        <Text>{t('common.loading')}</Text>
       </View>
     )
   }
@@ -199,7 +201,7 @@ export default function AudioBookDetailScreen({ navigation, route }: any) {
   if (!audioBook) {
     return (
       <View style={styles.errorContainer}>
-        <Text>Không tìm thấy audio book</Text>
+        <Text>{t('audioBookDetail.not_found')}</Text>
       </View>
     )
   }
@@ -211,7 +213,7 @@ export default function AudioBookDetailScreen({ navigation, route }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Audio Book</Text>
+        <Text style={styles.headerTitle}>{t('audioBookDetail.title')}</Text>
         <TouchableOpacity>
           <Ionicons name="share-outline" size={24} color="#333" />
         </TouchableOpacity>
@@ -223,12 +225,12 @@ export default function AudioBookDetailScreen({ navigation, route }: any) {
           <Image source={{ uri: audioBook.thumbnail }} style={styles.bookCover} />
           <View style={styles.bookDetails}>
             <Text style={styles.bookTitle}>{audioBook.title}</Text>
-            <Text style={styles.bookAuthor}>bởi {audioBook.author}</Text>
+            <Text style={styles.bookAuthor}>{t('common.by', { name: audioBook.author })}</Text>
 
             <View style={styles.bookStats}>
               <View style={styles.statItem}>
                 <Ionicons name="book-outline" size={16} color="#666" />
-                <Text style={styles.statText}>{audioBook.chaptersCount} chương</Text>
+                <Text style={styles.statText}>{t('audioBookDetail.chapters_count', { count: audioBook.chaptersCount })}</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="time-outline" size={16} color="#666" />
@@ -244,7 +246,7 @@ export default function AudioBookDetailScreen({ navigation, route }: any) {
 
             <TouchableOpacity style={styles.downloadButton}>
               <Ionicons name="download-outline" size={20} color="#007AFF" />
-              <Text style={styles.downloadButtonText}>Tải xuống toàn bộ</Text>
+              <Text style={styles.downloadButtonText}>{t('audioBookDetail.download_all')}</Text>
             </TouchableOpacity>
           </View>
         </View>

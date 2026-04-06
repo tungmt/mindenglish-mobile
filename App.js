@@ -1,5 +1,6 @@
+import "./src/i18n"
 import { useEffect, useState } from "react"
-import { NavigationContainer } from "@react-navigation/native"
+import { NavigationContainer, useNavigation } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createStackNavigator } from "@react-navigation/stack"
 import { StatusBar } from "expo-status-bar"
@@ -56,6 +57,7 @@ function AuthNavigator() {
 function AppNavigator() {
   const { user, loading } = useAuth()
   const [showSplash, setShowSplash] = useState(true)
+  const { navigate } = useNavigation()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -80,8 +82,8 @@ function AppNavigator() {
               component={AudioPlayerScreen}
               options={{
                 presentation: "modal",
-                gestureEnabled: true,
-                cardOverlayEnabled: true,
+                // gestureEnabled: true,
+                // cardOverlayEnabled: true,
               }}
             />
             <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
@@ -98,8 +100,7 @@ function AppNavigator() {
       {user && (
         <FloatingAudioPlayer
           onPress={() => {
-            // Navigate to audio player when floating player is pressed
-            // This would need navigation ref in a real app
+              navigate("AudioPlayer")
           }}
         />
       )}

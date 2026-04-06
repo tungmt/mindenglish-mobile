@@ -5,7 +5,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, 
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "../services/api"
 import { useAudio } from "../context/AudioContext"
-import { strings } from "../constants/strings"
+import { useTranslation } from "react-i18next"
 
 interface Course {
   id: string
@@ -37,6 +37,7 @@ interface Lesson {
 export default function CourseDetailScreen({ navigation, route }: any) {
   const { courseId } = route.params
   const { playTrack } = useAudio()
+  const { t } = useTranslation()
   const [course, setCourse] = useState<Course | null>(null)
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
@@ -78,7 +79,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
       setCourse({
         id: courseData.id,
         title: courseData.title,
-        description: courseData.description || "Chưa có mô tả",
+        description: courseData.description || t('courseDetail.no_description'),
         thumbnail: courseData.coverImage || courseData.avatar || "/placeholder.svg",
         instructor: "Cô Thúy", // TODO: Add instructor field to course model
         duration: totalDuration,
@@ -92,7 +93,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
       })
     } catch (error) {
       console.error("Error loading course detail:", error)
-      Alert.alert(strings.error, "Không thể tải thông tin khóa học. Vui lòng thử lại.")
+      Alert.alert(t('common.error'), t('courseDetail.error_loading'))
       setCourse(null)
     } finally {
       setLoading(false)
@@ -108,10 +109,10 @@ export default function CourseDetailScreen({ navigation, route }: any) {
       await apiService.addFavorite({ itemId: course.id, itemType: "COURSE" })
       {
         setCourse({ ...course, isEnrolled: true })
-        Alert.alert(strings.success, "Đăng ký khóa học thành công!")
+        Alert.alert(t('common.success'), t('courseDetail.enrolled_success'))
       }
     } catch (error) {
-      Alert.alert(strings.error, "Đăng ký thất bại. Vui lòng thử lại.")
+      Alert.alert(t('common.error'), t('courseDetail.enroll_error'))
     } finally {
       setEnrolling(false)
     }
@@ -119,7 +120,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
 
   const handlePlayLesson = async (lesson: Lesson) => {
     if (lesson.isLocked) {
-      Alert.alert("Bài học bị khóa", "Vui lòng đăng ký khóa học để mở khóa bài học này.")
+      Alert.alert(t('courseDetail.lesson_locked_title'), t('courseDetail.lesson_locked_msg'))
       return
     }
 
@@ -139,7 +140,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
 
   const formatDuration = (milliseconds: number) => {
     const minutes = Math.floor(milliseconds / 60000)
-    return `${minutes} phút`
+    return t('courseDetail.minutes_unit', { count: minutes })
   }
 
   const formatPrice = (price: number) => {
@@ -183,7 +184,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>{strings.loading}</Text>
+        <Text>{t('common.loading')}</Text>
       </View>
     )
   }
@@ -191,7 +192,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
   if (!course) {
     return (
       <View style={styles.errorContainer}>
-        <Text>Không tìm thấy khóa học</Text>
+        <Text>{t('courseDetail.not_found')}</Text>
       </View>
     )
   }
@@ -203,7 +204,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết khóa học</Text>
+        <Text style={styles.headerTitle}>{t('courseDetail.title')}</Text>
         <TouchableOpacity>
           <Ionicons name="share-outline" size={24} color="#333" />
         </TouchableOpacity>
@@ -215,7 +216,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
           <Image source={{ uri: course.thumbnail }} style={styles.courseImage} />
           <View style={styles.courseDetails}>
             <Text style={styles.courseTitle}>{course.title}</Text>
-            <Text style={styles.courseInstructor}>bởi {course.instructor}</Text>
+            <Text style={styles.courseInstructor}>{t('common.by', { name: course.instructor })}</Text>
 
             <View style={styles.courseStats}>
               <View style={styles.statItem}>
@@ -224,7 +225,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="book-outline" size={16} color="#666" />
-                <Text style={styles.statText}>{course.lessonsCount} bài học</Text>
+                <Text style={styles.statText}>{t('courseDetail.lessons_count', { count: course.lessonsCount })}</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="star" size={16} color="#FFD700" />
@@ -247,7 +248,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
                   onPress={handleEnroll}
                   disabled={enrolling}
                 >
-                  <Text style={styles.enrollButtonText}>{enrolling ? "Đang đăng ký..." : "Đăng ký ngay"}</Text>
+                  <Text style={styles.enrollButtonText}>{enrolling ? t('courseDetail.enrolling') : t('courseDetail.enroll')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -256,7 +257,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
 
         {/* Lessons List */}
         <View style={styles.lessonsSection}>
-          <Text style={styles.sectionTitle}>Danh sách bài học</Text>
+          <Text style={styles.sectionTitle}>{t('courseDetail.lessons_list')}</Text>
           <FlatList
             data={course.lessons}
             renderItem={renderLesson}

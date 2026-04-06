@@ -9,6 +9,7 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
+import { useTranslation } from "react-i18next"
 
 const { width } = Dimensions.get("window")
 
@@ -41,7 +42,14 @@ const tabs: TabItem[] = [
 ]
 
 const Tabbar: React.FC<BottomTabBarProps> = ({ navigation, state }) => {
+  const { t } = useTranslation()
   const currentIndex = state.index
+
+  const tabsLocalized: TabItem[] = [
+    { name: "Home", label: t('tabbar.home'), icon: "home-outline", iconFocused: "home" },
+    { name: "Library", label: t('tabbar.library'), icon: "library-outline", iconFocused: "library" },
+    { name: "Profile", label: t('tabbar.profile'), icon: "person-outline", iconFocused: "person" },
+  ]
 
   const handleTabPress = (routeName: string, index: number) => {
     if (currentIndex !== index) {
@@ -51,7 +59,7 @@ const Tabbar: React.FC<BottomTabBarProps> = ({ navigation, state }) => {
 
   return (
     <View style={styles.container}>
-      {tabs.map((tab, index) => {
+      {tabsLocalized.map((tab, index) => {
         const isFocused = currentIndex === index
         const route = state.routes[index]
 

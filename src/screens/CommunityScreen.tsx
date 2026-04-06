@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 
 interface LeaderboardUser {
   id: string
@@ -31,6 +32,7 @@ interface CommunityStats {
 }
 
 export default function CommunityScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<"leaderboard" | "popular">("leaderboard")
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
   const [popularAudios, setPopularAudios] = useState<PopularAudio[]>([])
@@ -108,11 +110,11 @@ export default function CommunityScreen({ navigation }: any) {
           </View>
           <View style={styles.userStat}>
             <Ionicons name="checkmark-circle-outline" size={12} color="#666" />
-            <Text style={styles.userStatText}>{user.completedLessons} bài</Text>
+            <Text style={styles.userStatText}>{t('community.lessons_unit', { count: user.completedLessons })}</Text>
           </View>
           <View style={styles.userStat}>
             <Ionicons name="flame" size={12} color="#FF9500" />
-            <Text style={styles.userStatText}>{user.streak} ngày</Text>
+            <Text style={styles.userStatText}>{t('community.days_unit', { count: user.streak })}</Text>
           </View>
         </View>
       </View>
@@ -133,7 +135,7 @@ export default function CommunityScreen({ navigation }: any) {
         </View>
         <View style={styles.audioStats}>
           <Ionicons name="headset" size={14} color="#007AFF" />
-          <Text style={styles.listenerCount}>{audio.listenerCount.toLocaleString()} người nghe</Text>
+          <Text style={styles.listenerCount}>{t('community.listeners', { count: audio.listenerCount.toLocaleString() })}</Text>
         </View>
       </View>
 
@@ -150,29 +152,29 @@ export default function CommunityScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cộng đồng</Text>
+        <Text style={styles.headerTitle}>{t('community.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {/* Community Stats */}
       {communityStats && (
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Thống kê cộng đồng</Text>
+          <Text style={styles.sectionTitle}>{t('community.stats_title')}</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Ionicons name="people-outline" size={24} color="#007AFF" />
               <Text style={styles.statNumber}>{communityStats.totalUsers.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Thành viên</Text>
+              <Text style={styles.statLabel}>{t('community.members')}</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="time-outline" size={24} color="#34C759" />
               <Text style={styles.statNumber}>{communityStats.totalListeningTime.toLocaleString()}h</Text>
-              <Text style={styles.statLabel}>Tổng giờ nghe</Text>
+              <Text style={styles.statLabel}>{t('community.total_hours')}</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="trending-up-outline" size={24} color="#FF9500" />
               <Text style={styles.statNumber}>{communityStats.mostPopularCategory}</Text>
-              <Text style={styles.statLabel}>Phổ biến nhất</Text>
+              <Text style={styles.statLabel}>{t('community.most_popular')}</Text>
             </View>
           </View>
         </View>
@@ -184,13 +186,13 @@ export default function CommunityScreen({ navigation }: any) {
           style={[styles.tab, activeTab === "leaderboard" && styles.activeTab]}
           onPress={() => setActiveTab("leaderboard")}
         >
-          <Text style={[styles.tabText, activeTab === "leaderboard" && styles.activeTabText]}>Bảng xếp hạng</Text>
+          <Text style={[styles.tabText, activeTab === "leaderboard" && styles.activeTabText]}>{t('community.leaderboard')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "popular" && styles.activeTab]}
           onPress={() => setActiveTab("popular")}
         >
-          <Text style={[styles.tabText, activeTab === "popular" && styles.activeTabText]}>Phổ biến</Text>
+          <Text style={[styles.tabText, activeTab === "popular" && styles.activeTabText]}>{t('community.popular')}</Text>
         </TouchableOpacity>
       </View>
 

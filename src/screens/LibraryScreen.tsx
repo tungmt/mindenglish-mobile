@@ -13,6 +13,7 @@ import {
   Dimensions,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 
 const { width } = Dimensions.get("window")
 
@@ -49,6 +50,7 @@ interface FeaturedLesson {
 }
 
 export default function LibraryScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<"audiobooks" | "courses">("audiobooks")
   const [searchQuery, setSearchQuery] = useState("")
   const [audioBooks, setAudioBooks] = useState<AudioBook[]>([])
@@ -171,12 +173,12 @@ export default function LibraryScreen({ navigation }: any) {
         <Text style={styles.bookTitle} numberOfLines={2}>
           {book.title}
         </Text>
-        <Text style={styles.bookAuthor}>bởi {book.author}</Text>
+        <Text style={styles.bookAuthor}>{t('common.by', { name: book.author })}</Text>
 
         <View style={styles.bookMeta}>
           <View style={styles.bookMetaItem}>
             <Ionicons name="book-outline" size={14} color="#666" />
-            <Text style={styles.bookMetaText}>{book.chaptersCount} chương</Text>
+            <Text style={styles.bookMetaText}>{t('library.chapters', { count: book.chaptersCount })}</Text>
           </View>
           <View style={styles.bookMetaItem}>
             <Ionicons name="time-outline" size={14} color="#666" />
@@ -201,7 +203,7 @@ export default function LibraryScreen({ navigation }: any) {
           {book.isDownloaded && (
             <View style={styles.downloadedBadge}>
               <Ionicons name="download" size={12} color="#34C759" />
-              <Text style={styles.downloadedText}>Đã tải</Text>
+              <Text style={styles.downloadedText}>{t('library.downloaded')}</Text>
             </View>
           )}
         </View>
@@ -218,7 +220,7 @@ export default function LibraryScreen({ navigation }: any) {
 
       {course.isEnrolled && (
         <View style={styles.enrolledBadge}>
-          <Text style={styles.enrolledText}>Đã đăng ký</Text>
+          <Text style={styles.enrolledText}>{t('library.enrolled')}</Text>
         </View>
       )}
 
@@ -226,12 +228,12 @@ export default function LibraryScreen({ navigation }: any) {
         <Text style={styles.courseTitle} numberOfLines={2}>
           {course.title}
         </Text>
-        <Text style={styles.courseInstructor}>bởi {course.instructor}</Text>
+        <Text style={styles.courseInstructor}>{t('common.by', { name: course.instructor })}</Text>
 
         <View style={styles.courseMeta}>
           <View style={styles.courseMetaItem}>
             <Ionicons name="layers-outline" size={14} color="#666" />
-            <Text style={styles.courseMetaText}>{course.modulesCount} modules</Text>
+            <Text style={styles.courseMetaText}>{t('library.modules', { count: course.modulesCount })}</Text>
           </View>
           <View style={styles.courseMetaItem}>
             <Ionicons name="time-outline" size={14} color="#666" />
@@ -278,7 +280,7 @@ export default function LibraryScreen({ navigation }: any) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Thư viện</Text>
+        <Text style={styles.headerTitle}>{t('library.title')}</Text>
         <TouchableOpacity style={styles.searchButton}>
           <Ionicons name="search" size={24} color="#333" />
         </TouchableOpacity>
@@ -289,14 +291,14 @@ export default function LibraryScreen({ navigation }: any) {
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Tìm kiếm audio books, khóa học..."
+          placeholder={t('library.search_placeholder')}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
       {/* Featured Lessons */}
-      {featuredLessons.length > 0 && (
+      {/* {featuredLessons.length > 0 && (
         <View style={styles.featuredSection}>
           <Text style={styles.sectionTitle}>Bài học nổi bật</Text>
           <ScrollView
@@ -309,7 +311,7 @@ export default function LibraryScreen({ navigation }: any) {
             ))}
           </ScrollView>
         </View>
-      )}
+      )} */}
 
       {/* Tabs */}
       <View style={styles.tabContainer}>
@@ -317,13 +319,13 @@ export default function LibraryScreen({ navigation }: any) {
           style={[styles.tab, activeTab === "audiobooks" && styles.activeTab]}
           onPress={() => setActiveTab("audiobooks")}
         >
-          <Text style={[styles.tabText, activeTab === "audiobooks" && styles.activeTabText]}>Audio Books</Text>
+          <Text style={[styles.tabText, activeTab === "audiobooks" && styles.activeTabText]}>{t('library.tab_audiobooks')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "courses" && styles.activeTab]}
           onPress={() => setActiveTab("courses")}
         >
-          <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText]}>Chương trình học</Text>
+          <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText]}>{t('library.tab_courses')}</Text>
         </TouchableOpacity>
       </View>
 

@@ -14,27 +14,11 @@ import {
   Image,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 
-const strings = {
-  welcome: "Chào mừng đến với MindEnglish",
-  enterEmail: "Nhập email của bạn để đăng nhập",
-  enterPassword: "Nhập mật khẩu của bạn",
-  email: "Email (ví dụ: user@example.com)",
-  password: "Mật khẩu",
-  login: "Đăng nhập",
-  loggingIn: "Đang đăng nhập...",
-  dontHaveAccount: "Bạn không có tài khoản? Đăng ký",
-  forgotPassword: "Quên mật khẩu?",
-  error: "Lỗi",
-  pleaseEnterEmail: "Vui lòng nhập email của bạn",
-  pleaseEnterPassword: "Vui lòng nhập mật khẩu của bạn",
-  invalidCredentials: "Email hoặc mật khẩu không đúng. Vui lòng thử lại.",
-  invalidEmail: "Email không hợp lệ. Vui lòng nhập email đúng định dạng.",
-  termsAndPrivacy: "Bằng cách tiếp tục, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi",
-}
-
 export default function AuthScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -43,17 +27,17 @@ export default function AuthScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     if (!email.trim()) {
-      Alert.alert(strings.error, strings.pleaseEnterEmail)
+      Alert.alert(t('common.error'), t('auth.error_enter_email'))
       return
     }
 
     if (!validateEmail(email)) {
-      Alert.alert(strings.error, strings.invalidEmail)
+      Alert.alert(t('common.error'), t('auth.error_invalid_email'))
       return
     }
 
     if (!password.trim()) {
-      Alert.alert(strings.error, strings.pleaseEnterPassword)
+      Alert.alert(t('common.error'), t('auth.error_enter_password'))
       return
     }
 
@@ -62,7 +46,7 @@ export default function AuthScreen({ navigation }: any) {
     setLoading(false)
 
     if (!success) {
-      Alert.alert(strings.error, strings.invalidCredentials)
+      Alert.alert(t('common.error'), t('auth.error_invalid_credentials'))
     }
   }
 
@@ -76,8 +60,8 @@ export default function AuthScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Image source={require("../../assets/icon.png")} style={styles.logo} />
-          <Text style={styles.title}>{strings.welcome}</Text>
-          <Text style={styles.subtitle}>{strings.enterEmail}</Text>
+          <Text style={styles.title}>{t('auth.welcome')}</Text>
+          <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
@@ -85,7 +69,7 @@ export default function AuthScreen({ navigation }: any) {
             <Ionicons name="mail" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder={strings.email}
+              placeholder={t('auth.email_placeholder')}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -98,7 +82,7 @@ export default function AuthScreen({ navigation }: any) {
             <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder={strings.password}
+              placeholder={t('auth.password_placeholder')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -120,22 +104,22 @@ export default function AuthScreen({ navigation }: any) {
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>{loading ? strings.loggingIn : strings.login}</Text>
+            <Text style={styles.buttonText}>{loading ? t('auth.signing_in') : t('auth.login')}</Text>
           </TouchableOpacity>
 
           <View style={styles.authLinks}>
             <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.linkText}>{strings.dontHaveAccount}</Text>
+              <Text style={styles.linkText}>{t('auth.no_account')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
-              <Text style={styles.linkText}>{strings.forgotPassword}</Text>
+              <Text style={styles.linkText}>{t('auth.forgot_password')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>{strings.termsAndPrivacy}</Text>
+          <Text style={styles.footerText}>{t('auth.terms')}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

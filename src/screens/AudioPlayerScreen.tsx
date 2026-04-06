@@ -15,8 +15,8 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import Slider from "@react-native-community/slider"
+import { useTranslation } from "react-i18next"
 import { useAudio } from "../context/AudioContext"
-import { strings } from "../constants/strings"
 
 const { width, height } = Dimensions.get("window")
 
@@ -33,6 +33,7 @@ interface Comment {
 }
 
 export default function AudioPlayerScreen({ navigation, route }: any) {
+  const { t } = useTranslation()
   const { trackId } = route.params || {}
   const {
     currentTrack,
@@ -83,11 +84,11 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
     const days = Math.floor(diff / 86400000)
     const weeks = Math.floor(diff / 604800000)
 
-    if (minutes < 1) return strings.timeAgo.justNow
-    if (minutes < 60) return strings.timeAgo.minuteAgo.replace("{count}", minutes.toString())
-    if (hours < 24) return strings.timeAgo.hourAgo.replace("{count}", hours.toString())
-    if (days < 7) return strings.timeAgo.dayAgo.replace("{count}", days.toString())
-    return strings.timeAgo.weekAgo.replace("{count}", weeks.toString())
+    if (minutes < 1) return t('audioPlayer.just_now')
+    if (minutes < 60) return t('audioPlayer.minutes_ago', { count: minutes })
+    if (hours < 24) return t('audioPlayer.hours_ago', { count: hours })
+    if (days < 7) return t('audioPlayer.days_ago', { count: days })
+    return t('audioPlayer.weeks_ago', { count: weeks })
   }
 
   const handlePlayPause = () => {
@@ -110,15 +111,15 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
   const handleMarkCompleted = () => {
     if (currentTrack) {
       markAsCompleted(currentTrack.id)
-      Alert.alert(strings.success, "Đã đánh dấu bài học hoàn thành!")
+      Alert.alert(t('common.success'), t('audioPlayer.marked_completed'))
     }
   }
 
   const handleMarkRepeat = () => {
     if (currentTrack) {
       markAsRepeat(currentTrack.id)
-      const message = currentTrack.isMarkedForRepeat ? "Đã bỏ đánh dấu lặp lại" : "Đã đánh dấu để lặp lại"
-      Alert.alert(strings.success, message)
+      const message = currentTrack.isMarkedForRepeat ? t('audioPlayer.unmarked_repeat') : t('audioPlayer.marked_repeat')
+      Alert.alert(t('common.success'), message)
     }
   }
 
@@ -162,7 +163,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
           </TouchableOpacity>
           <TouchableOpacity style={styles.commentAction}>
             <Ionicons name="chatbubble-outline" size={16} color="#666" />
-            <Text style={styles.commentActionText}>{strings.reply}</Text>
+            <Text style={styles.commentActionText}>{t('audioPlayer.reply')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -172,7 +173,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
   if (!currentTrack) {
     return (
       <View style={styles.container}>
-        <Text>Không tìm thấy bài học</Text>
+        <Text>{t('audioPlayer.not_found')}</Text>
       </View>
     )
   }
@@ -288,20 +289,20 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
           style={[styles.tab, activeTab === "transcript" && styles.activeTab]}
           onPress={() => setActiveTab("transcript")}
         >
-          <Text style={[styles.tabText, activeTab === "transcript" && styles.activeTabText]}>{strings.transcript}</Text>
+          <Text style={[styles.tabText, activeTab === "transcript" && styles.activeTabText]}>{t('audioPlayer.transcript')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "notes" && styles.activeTab]}
           onPress={() => setActiveTab("notes")}
         >
-          <Text style={[styles.tabText, activeTab === "notes" && styles.activeTabText]}>{strings.notes}</Text>
+          <Text style={[styles.tabText, activeTab === "notes" && styles.activeTabText]}>{t('audioPlayer.notes')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "comments" && styles.activeTab]}
           onPress={() => setActiveTab("comments")}
         >
           <Text style={[styles.tabText, activeTab === "comments" && styles.activeTabText]}>
-            {strings.commentsTitle.replace("{count}", comments.length.toString())}
+            {t('audioPlayer.comments', { count: comments.length })}
           </Text>
         </TouchableOpacity>
       </View>
@@ -312,7 +313,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
           <View style={styles.transcriptContainer}>
             <Text style={styles.transcriptText}>
               {currentTrack.transcript ||
-                "Transcript sẽ được hiển thị ở đây. Bạn có thể theo dõi nội dung bài học một cách chi tiết và chính xác."}
+                t('audioPlayer.transcript_placeholder')}
             </Text>
           </View>
         )}
@@ -321,7 +322,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
           <View style={styles.notesContainer}>
             <Text style={styles.notesText}>
               {currentTrack.notes ||
-                "Ghi chú của bạn sẽ được lưu ở đây. Hãy ghi lại những điểm quan trọng trong bài học!"}
+                t('audioPlayer.notes_placeholder')}
             </Text>
           </View>
         )}
@@ -332,8 +333,8 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
               comments.map(renderComment)
             ) : (
               <View style={styles.noComments}>
-                <Text style={styles.noCommentsText}>{strings.noComments}</Text>
-                <Text style={styles.noCommentsSubtext}>{strings.beFirstToComment}</Text>
+                <Text style={styles.noCommentsText}>{t('audioPlayer.no_comments')}</Text>
+                <Text style={styles.noCommentsSubtext}>{t('audioPlayer.be_first')}</Text>
               </View>
             )}
           </View>
@@ -347,7 +348,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
             <View style={styles.commentInputExpanded}>
               <TextInput
                 style={styles.commentInput}
-                placeholder={strings.writeComment}
+                placeholder={t('audioPlayer.write_comment')}
                 value={commentText}
                 onChangeText={setCommentText}
                 multiline
@@ -355,18 +356,18 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
               />
               <View style={styles.commentInputActions}>
                 <TouchableOpacity onPress={() => setShowCommentInput(false)}>
-                  <Text style={styles.commentCancel}>{strings.cancel}</Text>
+                  <Text style={styles.commentCancel}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleAddComment} disabled={!commentText.trim()}>
                   <Text style={[styles.commentPost, !commentText.trim() && styles.commentPostDisabled]}>
-                    {strings.post}
+                    {t('audioPlayer.post')}
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
             <TouchableOpacity style={styles.commentInputButton} onPress={() => setShowCommentInput(true)}>
-              <Text style={styles.commentInputPlaceholder}>{strings.addComment}</Text>
+              <Text style={styles.commentInputPlaceholder}>{t('audioPlayer.add_comment')}</Text>
               <Ionicons name="chatbubble-outline" size={20} color="#666" />
             </TouchableOpacity>
           )}
@@ -377,7 +378,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
       <Modal visible={showSpeedModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.speedModal}>
-            <Text style={styles.speedModalTitle}>{strings.playbackSpeed}</Text>
+            <Text style={styles.speedModalTitle}>{t('audioPlayer.playback_speed')}</Text>
             {playbackSpeeds.map((speed) => (
               <TouchableOpacity
                 key={speed}
@@ -391,7 +392,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.speedModalClose} onPress={() => setShowSpeedModal(false)}>
-              <Text style={styles.speedModalCloseText}>{strings.close}</Text>
+              <Text style={styles.speedModalCloseText}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

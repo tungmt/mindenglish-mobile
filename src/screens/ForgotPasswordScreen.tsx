@@ -13,11 +13,13 @@ import {
   ScrollView,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import { apiService } from "../services/api"
 
 type Step = "email" | "verification"
 
 export default function ForgotPasswordScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const [step, setStep] = useState<Step>("email")
   const [email, setEmail] = useState("")
   const [verificationCode, setVerificationCode] = useState("")
@@ -34,12 +36,12 @@ export default function ForgotPasswordScreen({ navigation }: any) {
 
   const handleSendCode = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address")
+      Alert.alert(t('common.error'), t('forgotPassword.error_enter_email'))
       return
     }
 
     if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address")
+      Alert.alert(t('common.error'), t('forgotPassword.error_valid_email'))
       return
     }
 
@@ -47,17 +49,12 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     try {
       const response = await apiService.sendVerificationCode(email)
       Alert.alert(
-        "Success",
-        response.message || "Verification code has been sent to your email. Please check your inbox.",
-        [
-          {
-            text: "OK",
-            onPress: () => setStep("verification"),
-          },
-        ]
+        t('common.success'),
+        response.message || t('forgotPassword.success_send'),
+        [{ text: t('common.ok'), onPress: () => setStep("verification") }]
       )
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to send verification code. Please try again.")
+      Alert.alert(t('common.error'), error.message || t('forgotPassword.error_enter_email'))
     } finally {
       setLoading(false)
     }
@@ -65,49 +62,40 @@ export default function ForgotPasswordScreen({ navigation }: any) {
 
   const handleResetPassword = async () => {
     if (!verificationCode.trim()) {
-      Alert.alert("Error", "Please enter the verification code")
+      Alert.alert(t('common.error'), t('forgotPassword.error_enter_code'))
       return
     }
 
     if (verificationCode.length !== 6) {
-      Alert.alert("Error", "Verification code must be 6 digits")
+      Alert.alert(t('common.error'), t('forgotPassword.error_code_length'))
       return
     }
 
     if (!newPassword.trim()) {
-      Alert.alert("Error", "Please enter a new password")
+      Alert.alert(t('common.error'), t('forgotPassword.error_enter_new_password'))
       return
     }
 
     if (newPassword.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters")
+      Alert.alert(t('common.error'), t('forgotPassword.error_password_length'))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match")
+      Alert.alert(t('common.error'), t('forgotPassword.error_passwords_match'))
       return
     }
 
     setLoading(true)
     try {
-      const response = await apiService.resetPassword({
-        email,
-        code: verificationCode,
-        newPassword,
-      })
+      const response = await apiService.resetPassword({ email, code: verificationCode, newPassword })
       Alert.alert(
-        "Success",
-        response.message || "Your password has been reset successfully. You can now sign in with your new password.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("Auth"),
-          },
-        ]
+        t('common.success'),
+        response.message || t('forgotPassword.success_reset'),
+        [{ text: t('common.ok'), onPress: () => navigation.navigate("Auth") }]
       )
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to reset password. Please try again.")
+      Alert.alert(t('common.error'), error.message || t('forgotPassword.error_enter_code'))
     } finally {
       setLoading(false)
     }
@@ -117,9 +105,9 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     setLoading(true)
     try {
       const response = await apiService.sendVerificationCode(email)
-      Alert.alert("Success", "Verification code has been resent to your email.")
+      Alert.alert(t('common.success'), t('forgotPassword.success_resend'))
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to resend code. Please try again.")
+      Alert.alert(t('common.error'), error.message || t('forgotPassword.error_enter_email'))
     } finally {
       setLoading(false)
     }
@@ -131,8 +119,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.subtitle}>Enter your email address to receive a verification code</Text>
+        <Text style={styles.title}>{t('forgotPassword.title_email')}</Text>
+        <Text style={styles.subtitle}>{t('forgotPassword.subtitle_email')}</Text>
       </View>
 
       <View style={styles.form}>
@@ -140,7 +128,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           <Ionicons name="mail" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Email address"
+            placeholder={t('forgotPassword.email_placeholder')}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -155,11 +143,11 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           onPress={handleSendCode}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? "Sending..." : "Send Verification Code"}</Text>
+          <Text style={styles.buttonText}>{loading ? t('forgotPassword.sending') : t('forgotPassword.send_code')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate("Auth")}>
-          <Text style={styles.backButtonText}>Back to Sign In</Text>
+          <Text style={styles.backButtonText}>{t('forgotPassword.back_to_signin')}</Text>
         </TouchableOpacity>
       </View>
     </>
@@ -171,9 +159,9 @@ export default function ForgotPasswordScreen({ navigation }: any) {
         <TouchableOpacity style={styles.backButton} onPress={() => setStep("email")}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>Enter Verification Code</Text>
+        <Text style={styles.title}>{t('forgotPassword.title_verify')}</Text>
         <Text style={styles.subtitle}>
-          Please enter the 6-digit code sent to {email}
+          {t('forgotPassword.subtitle_verify', { email })}
         </Text>
       </View>
 
@@ -182,7 +170,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           <Ionicons name="shield-checkmark" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Verification code (6 digits)"
+            placeholder={t('forgotPassword.code_placeholder')}
             value={verificationCode}
             onChangeText={setVerificationCode}
             keyboardType="number-pad"
@@ -197,7 +185,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="New password"
+            placeholder={t('forgotPassword.new_password')}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry={!showPassword}
@@ -214,7 +202,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Confirm new password"
+            placeholder={t('forgotPassword.confirm_password')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showConfirmPassword}
@@ -227,14 +215,14 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.passwordHint}>Password must be at least 8 characters</Text>
+        <Text style={styles.passwordHint}>{t('forgotPassword.password_hint')}</Text>
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleResetPassword}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? "Resetting..." : "Reset Password"}</Text>
+          <Text style={styles.buttonText}>{loading ? t('forgotPassword.resetting') : t('forgotPassword.reset')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -242,8 +230,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           disabled={loading}
           style={styles.resendContainer}
         >
-          <Text style={styles.resendText}>Didn't receive the code? </Text>
-          <Text style={styles.resendLink}>Resend</Text>
+          <Text style={styles.resendText}>{t('forgotPassword.resend_prefix')} </Text>
+          <Text style={styles.resendLink}>{t('forgotPassword.resend')}</Text>
         </TouchableOpacity>
       </View>
     </>

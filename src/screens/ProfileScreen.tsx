@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert, Switch } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 import { apiService } from "../services/api"
 
@@ -14,6 +15,7 @@ interface ProfileStats {
 }
 
 export default function ProfileScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const { user, logout } = useAuth()
   const [profileStats, setProfileStats] = useState<ProfileStats>({
     totalListeningTime: 0,
@@ -60,23 +62,23 @@ export default function ProfileScreen({ navigation }: any) {
   }
 
   const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: logout },
+    Alert.alert(t('profile.sign_out_title'), t('profile.sign_out_confirm'), [
+      { text: t('common.cancel'), style: "cancel" },
+      { text: t('profile.sign_out'), style: "destructive", onPress: logout },
     ])
   }
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account? This action cannot be undone and all your progress will be lost.",
+      t('profile.delete_title'),
+      t('profile.delete_confirm'),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t('common.cancel'), style: "cancel" },
         {
-          text: "Delete",
+          text: t('common.delete'),
           style: "destructive",
           onPress: async () => {
-            Alert.alert("Note", "Account deletion is not available in the current API version.")
+            Alert.alert(t('common.ok'), t('profile.delete_not_available'))
           },
         },
       ],
@@ -95,29 +97,26 @@ export default function ProfileScreen({ navigation }: any) {
   const menuItems = [
     {
       icon: "settings-outline",
-      title: "Settings",
-      subtitle: "App preferences and configurations",
+      title: t('profile.menu_settings'),
+      subtitle: t('profile.menu_settings_sub'),
       onPress: () => navigation.navigate("Settings"),
     },
     {
       icon: "help-circle-outline",
-      title: "Support & Help",
-      subtitle: "Get help and contact support",
+      title: t('profile.menu_support'),
+      subtitle: t('profile.menu_support_sub'),
       onPress: () => navigation.navigate("Support"),
     },
     {
       icon: "document-text-outline",
-      title: "Privacy Policy",
-      subtitle: "Read our privacy policy",
-      onPress: () => {
-        // Navigate to privacy policy or open web view
-        console.log("Open privacy policy")
-      },
+      title: t('profile.menu_privacy'),
+      subtitle: t('profile.menu_privacy_sub'),
+      onPress: () => { console.log("Open privacy policy") },
     },
     {
       icon: "shield-checkmark-outline",
-      title: "Terms of Service",
-      subtitle: "Read our terms of service",
+      title: t('profile.menu_terms'),
+      subtitle: t('profile.menu_terms_sub'),
       onPress: () => {
         // Navigate to terms of service or open web view
         console.log("Open terms of service")
@@ -125,21 +124,15 @@ export default function ProfileScreen({ navigation }: any) {
     },
     {
       icon: "star-outline",
-      title: "Rate the App",
-      subtitle: "Help us improve by rating the app",
-      onPress: () => {
-        // Open app store rating
-        console.log("Open app store rating")
-      },
+      title: t('profile.menu_rate'),
+      subtitle: t('profile.menu_rate_sub'),
+      onPress: () => { console.log("Open app store rating") },
     },
     {
       icon: "share-outline",
-      title: "Share App",
-      subtitle: "Share MindEnglish with friends",
-      onPress: () => {
-        // Open share dialog
-        console.log("Share app")
-      },
+      title: t('profile.menu_share'),
+      subtitle: t('profile.menu_share_sub'),
+      onPress: () => { console.log("Share app") },
     },
   ]
 
@@ -147,7 +140,7 @@ export default function ProfileScreen({ navigation }: any) {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
       </View>
 
       {/* User Info */}
@@ -171,46 +164,46 @@ export default function ProfileScreen({ navigation }: any) {
 
         <TouchableOpacity style={styles.editProfileButton}>
           <Ionicons name="pencil" size={16} color="#007AFF" />
-          <Text style={styles.editProfileText}>Edit</Text>
+          <Text style={styles.editProfileText}>{t('common.edit')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Stats */}
       <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Your Learning Stats</Text>
+        <Text style={styles.sectionTitle}>{t('profile.learning_stats')}</Text>
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Ionicons name="time-outline" size={24} color="#007AFF" />
             <Text style={styles.statNumber}>{formatTime(profileStats.totalListeningTime)}</Text>
-            <Text style={styles.statLabel}>Total Time</Text>
+            <Text style={styles.statLabel}>{t('profile.total_time')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="book-outline" size={24} color="#34C759" />
             <Text style={styles.statNumber}>{profileStats.completedCourses}</Text>
-            <Text style={styles.statLabel}>Courses</Text>
+            <Text style={styles.statLabel}>{t('profile.courses')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="flame" size={24} color="#FF9500" />
             <Text style={styles.statNumber}>{profileStats.currentStreak}</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+            <Text style={styles.statLabel}>{t('profile.day_streak')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="checkmark-circle-outline" size={24} color="#FF3B30" />
             <Text style={styles.statNumber}>{profileStats.totalLessons}</Text>
-            <Text style={styles.statLabel}>Lessons</Text>
+            <Text style={styles.statLabel}>{t('profile.lessons')}</Text>
           </View>
         </View>
       </View>
 
       {/* Quick Settings */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Settings</Text>
+        <Text style={styles.sectionTitle}>{t('profile.quick_settings')}</Text>
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
             <Ionicons name="notifications-outline" size={20} color="#666" />
             <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>Push Notifications</Text>
-              <Text style={styles.settingSubtitle}>Get reminders to practice</Text>
+              <Text style={styles.settingTitle}>{t('profile.push_notifications')}</Text>
+              <Text style={styles.settingSubtitle}>{t('profile.reminders')}</Text>
             </View>
           </View>
           <Switch
@@ -224,7 +217,7 @@ export default function ProfileScreen({ navigation }: any) {
 
       {/* Menu Items */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>More</Text>
+        <Text style={styles.sectionTitle}>{t('profile.more')}</Text>
         {menuItems.map((item, index) => (
           <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
             <View style={styles.menuItemLeft}>
@@ -243,18 +236,18 @@ export default function ProfileScreen({ navigation }: any) {
       <View style={styles.section}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
-          <Text style={styles.logoutText}>Sign Out</Text>
+          <Text style={styles.logoutText}>{t('profile.sign_out')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount} disabled={loading}>
           <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-          <Text style={styles.deleteText}>{loading ? "Deleting..." : "Delete My Account"}</Text>
+          <Text style={styles.deleteText}>{loading ? t('profile.deleting') : t('profile.delete_account')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>MindEnglish v1.0.0</Text>
-        <Text style={styles.footerText}>Made with ❤️ for English learners</Text>
+        <Text style={styles.footerText}>{t('profile.version')}</Text>
+        <Text style={styles.footerText}>{t('profile.made_with')}</Text>
       </View>
     </ScrollView>
   )

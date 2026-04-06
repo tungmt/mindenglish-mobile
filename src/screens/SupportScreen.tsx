@@ -5,41 +5,30 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert,
 import { Ionicons } from "@expo/vector-icons"
 
 export default function SupportScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const [selectedCategory, setSelectedCategory] = useState("")
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
 
   const supportCategories = [
-    { id: "technical", title: "Technical Issues", icon: "bug-outline" },
-    { id: "account", title: "Account Problems", icon: "person-outline" },
-    { id: "billing", title: "Billing & Payments", icon: "card-outline" },
-    { id: "content", title: "Course Content", icon: "book-outline" },
-    { id: "feature", title: "Feature Request", icon: "bulb-outline" },
-    { id: "other", title: "Other", icon: "help-circle-outline" },
+    { id: "technical", title: t('support.cat_technical'), icon: "bug-outline" },
+    { id: "account", title: t('support.cat_account'), icon: "person-outline" },
+    { id: "billing", title: t('support.cat_billing'), icon: "card-outline" },
+    { id: "content", title: t('support.cat_content'), icon: "book-outline" },
+    { id: "feature", title: t('support.cat_feature'), icon: "bulb-outline" },
+    { id: "other", title: t('support.cat_other'), icon: "help-circle-outline" },
   ]
 
   const faqItems = [
-    {
-      question: "How do I download lessons for offline listening?",
-      answer: "Go to any lesson and tap the download icon. You can also enable auto-download in Settings.",
-    },
-    {
-      question: "Can I change the playback speed?",
-      answer: "Yes! Tap the speed button in the audio player to choose from 0.5x to 2x speed.",
-    },
-    {
-      question: "How do I track my learning progress?",
-      answer: "Your progress is automatically tracked. Check the Learn tab to see your stats and completed lessons.",
-    },
-    {
-      question: "What if I forget my password?",
-      answer: "Use the 'Forgot Password' option on the login screen to reset your password via SMS.",
-    },
+    { question: t('support.faq1_q'), answer: t('support.faq1_a') },
+    { question: t('support.faq2_q'), answer: t('support.faq2_a') },
+    { question: t('support.faq3_q'), answer: t('support.faq3_a') },
+    { question: t('support.faq4_q'), answer: t('support.faq4_a') },
   ]
 
   const handleSubmitSupport = async () => {
     if (!selectedCategory || !message.trim()) {
-      Alert.alert("Error", "Please select a category and enter your message")
+      Alert.alert(t('common.error'), t('support.error_fill'))
       return
     }
 
@@ -47,7 +36,7 @@ export default function SupportScreen({ navigation }: any) {
     // Simulate API call
     setTimeout(() => {
       setLoading(false)
-      Alert.alert("Support Request Sent", "Thank you for contacting us. We'll get back to you within 24 hours.", [
+      Alert.alert(t('support.success_title'), t('support.success_msg'), [
         { text: "OK", onPress: () => navigation.goBack() },
       ])
     }, 1000)
@@ -68,29 +57,29 @@ export default function SupportScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Support & Help</Text>
+        <Text style={styles.headerTitle}>{t('support.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Quick Contact */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Contact</Text>
+          <Text style={styles.sectionTitle}>{t('support.quick_contact')}</Text>
           <View style={styles.contactButtons}>
             <TouchableOpacity style={styles.contactButton} onPress={openEmail}>
               <Ionicons name="mail-outline" size={24} color="#007AFF" />
-              <Text style={styles.contactText}>Email Support</Text>
+              <Text style={styles.contactText}>{t('support.email_support')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactButton} onPress={openPhone}>
               <Ionicons name="call-outline" size={24} color="#007AFF" />
-              <Text style={styles.contactText}>Call Us</Text>
+              <Text style={styles.contactText}>{t('support.call_us')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* FAQ */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+          <Text style={styles.sectionTitle}>{t('support.faq')}</Text>
           {faqItems.map((item, index) => (
             <View key={index} style={styles.faqItem}>
               <Text style={styles.faqQuestion}>{item.question}</Text>
@@ -101,9 +90,9 @@ export default function SupportScreen({ navigation }: any) {
 
         {/* Support Form */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Send us a Message</Text>
+          <Text style={styles.sectionTitle}>{t('support.send_message_title')}</Text>
 
-          <Text style={styles.formLabel}>Category</Text>
+          <Text style={styles.formLabel}>{t('support.category')}</Text>
           <View style={styles.categoryGrid}>
             {supportCategories.map((category) => (
               <TouchableOpacity
@@ -128,10 +117,10 @@ export default function SupportScreen({ navigation }: any) {
             ))}
           </View>
 
-          <Text style={styles.formLabel}>Message</Text>
+          <Text style={styles.formLabel}>{t('support.message_label')}</Text>
           <TextInput
             style={styles.messageInput}
-            placeholder="Describe your issue or question..."
+            placeholder={t('support.message_placeholder')}
             value={message}
             onChangeText={setMessage}
             multiline
@@ -144,7 +133,7 @@ export default function SupportScreen({ navigation }: any) {
             onPress={handleSubmitSupport}
             disabled={loading}
           >
-            <Text style={styles.submitButtonText}>{loading ? "Sending..." : "Send Message"}</Text>
+            <Text style={styles.submitButtonText}>{loading ? t('support.sending') : t('support.send')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

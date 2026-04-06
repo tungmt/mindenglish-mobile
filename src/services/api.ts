@@ -187,7 +187,8 @@ class ApiService {
     const query = queryParams.toString()
     const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_PROGRESS}?${query}` : API_CONFIG.ENDPOINTS.USER_PROGRESS
 
-    return this.makeRequest<Progress[]>(endpoint)
+    const response = await this.makeRequest<{ progress: Progress[] }>(endpoint)
+    return response.progress || []
   }
 
   async updateProgress(data: CreateProgressRequest): Promise<Progress> {

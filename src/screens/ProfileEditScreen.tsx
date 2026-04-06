@@ -14,9 +14,11 @@ import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { useAuth } from "../context/AuthContext"
 import { apiService } from "../services/api"
+import { useTranslation } from "react-i18next"
 
 export default function ProfileEditScreen({ navigation }: any) {
   const { user, updateProfile } = useAuth()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   
@@ -40,7 +42,7 @@ export default function ProfileEditScreen({ navigation }: any) {
     if (Platform.OS !== "web") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== "granted") {
-        Alert.alert("Permission Denied", "Sorry, we need camera roll permissions to upload your avatar.")
+        Alert.alert(t('common.error'), t('profileEdit.permission_denied'))
         return false
       }
     }
@@ -64,7 +66,7 @@ export default function ProfileEditScreen({ navigation }: any) {
       }
     } catch (error) {
       console.error("Error picking image:", error)
-      Alert.alert("Error", "Failed to pick image")
+      Alert.alert(t('common.error'), t('profileEdit.error_pick_image'))
     }
   }
 
@@ -81,7 +83,7 @@ export default function ProfileEditScreen({ navigation }: any) {
       const response = await apiService.uploadAvatar(file)
       setProfileData({ ...profileData, avatar: response.avatarUrl })
       
-      Alert.alert("Success", "Avatar uploaded successfully!")
+      Alert.alert(t('common.success'), t('profileEdit.success_profile') + ' Avatar uploaded')
     } catch (error: any) {
       console.error("Error uploading avatar:", error)
       Alert.alert("Error", error.message || "Failed to upload avatar")
@@ -92,7 +94,7 @@ export default function ProfileEditScreen({ navigation }: any) {
 
   const handleUpdateProfile = async () => {
     if (!profileData.name.trim()) {
-      Alert.alert("Error", "Name is required")
+      Alert.alert(t('common.error'), t('profileEdit.error_name_required'))
       return
     }
 
@@ -105,10 +107,10 @@ export default function ProfileEditScreen({ navigation }: any) {
       })
 
       if (success) {
-        Alert.alert("Success", "Profile updated successfully!")
+        Alert.alert(t('common.success'), t('profileEdit.success_profile'))
         navigation.goBack()
       } else {
-        Alert.alert("Error", "Failed to update profile")
+        Alert.alert(t('common.error'), t('common.error'))
       }
     } catch (error: any) {
       console.error("Error updating profile:", error)
@@ -120,17 +122,17 @@ export default function ProfileEditScreen({ navigation }: any) {
 
   const handleChangePassword = async () => {
     if (!passwordData.currentPassword || !passwordData.newPassword) {
-      Alert.alert("Error", "Please fill in all password fields")
+      Alert.alert(t('common.error'), t('profileEdit.error_fill_password'))
       return
     }
 
     if (passwordData.newPassword.length < 6) {
-      Alert.alert("Error", "New password must be at least 6 characters")
+      Alert.alert(t('common.error'), t('profileEdit.error_password_length'))
       return
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      Alert.alert("Error", "New passwords do not match")
+      Alert.alert(t('common.error'), t('profileEdit.error_passwords_match'))
       return
     }
 
@@ -142,7 +144,7 @@ export default function ProfileEditScreen({ navigation }: any) {
       })
 
       if (response.success) {
-        Alert.alert("Success", "Password changed successfully!")
+        Alert.alert(t('common.success'), t('profileEdit.success_password'))
         setPasswordData({
           currentPassword: "",
           newPassword: "",
@@ -163,13 +165,13 @@ export default function ProfileEditScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>{t('profileEdit.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {/* Avatar Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile Photo</Text>
+        <Text style={styles.sectionTitle}>{t('profileEdit.profile_photo')}</Text>
         <View style={styles.avatarContainer}>
           {profileData.avatar ? (
             <Image source={{ uri: profileData.avatar }} style={styles.avatar} />
@@ -186,39 +188,39 @@ export default function ProfileEditScreen({ navigation }: any) {
             <Ionicons name="camera" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-        {uploadingAvatar && <Text style={styles.uploadingText}>Uploading...</Text>}
+        {uploadingAvatar && <Text style={styles.uploadingText}>{t('profileEdit.uploading')}</Text>}
       </View>
 
       {/* Profile Information Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile Information</Text>
+        <Text style={styles.sectionTitle}>{t('profileEdit.profile_info')}</Text>
         
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>{t('profileEdit.email_label')}</Text>
           <View style={styles.inputDisabled}>
             <Text style={styles.inputDisabledText}>{user?.email}</Text>
             <Ionicons name="lock-closed" size={16} color="#999" />
           </View>
-          <Text style={styles.helperText}>Email cannot be changed</Text>
+          <Text style={styles.helperText}>{t('profileEdit.email_locked')}</Text>
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Name *</Text>
+          <Text style={styles.label}>{t('profileEdit.name_label')}</Text>
           <TextInput
             style={styles.input}
             value={profileData.name}
             onChangeText={(text) => setProfileData({ ...profileData, name: text })}
-            placeholder="Enter your name"
+            placeholder={t('profileEdit.name_placeholder')}
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone</Text>
+          <Text style={styles.label}>{t('profileEdit.phone_label')}</Text>
           <TextInput
             style={styles.input}
             value={profileData.phone}
             onChangeText={(text) => setProfileData({ ...profileData, phone: text })}
-            placeholder="Enter your phone number"
+            placeholder={t('profileEdit.phone_placeholder')}
             keyboardType="phone-pad"
           />
         </View>
@@ -228,22 +230,22 @@ export default function ProfileEditScreen({ navigation }: any) {
           onPress={handleUpdateProfile}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? "Updating..." : "Update Profile"}</Text>
+          <Text style={styles.buttonText}>{loading ? t('profileEdit.updating') : t('profileEdit.update')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Change Password Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Change Password</Text>
+        <Text style={styles.sectionTitle}>{t('profileEdit.change_password_title')}</Text>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Current Password</Text>
+          <Text style={styles.label}>{t('profileEdit.current_password')}</Text>
           <View style={styles.passwordInput}>
             <TextInput
               style={styles.passwordField}
               value={passwordData.currentPassword}
               onChangeText={(text) => setPasswordData({ ...passwordData, currentPassword: text })}
-              placeholder="Enter current password"
+              placeholder={t('profileEdit.current_password_placeholder')}
               secureTextEntry={!showCurrentPassword}
             />
             <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
@@ -253,13 +255,13 @@ export default function ProfileEditScreen({ navigation }: any) {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>New Password</Text>
+          <Text style={styles.label}>{t('profileEdit.new_password')}</Text>
           <View style={styles.passwordInput}>
             <TextInput
               style={styles.passwordField}
               value={passwordData.newPassword}
               onChangeText={(text) => setPasswordData({ ...passwordData, newPassword: text })}
-              placeholder="Enter new password"
+              placeholder={t('profileEdit.new_password_placeholder')}
               secureTextEntry={!showNewPassword}
             />
             <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
@@ -269,13 +271,13 @@ export default function ProfileEditScreen({ navigation }: any) {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Confirm New Password</Text>
+          <Text style={styles.label}>{t('profileEdit.confirm_password')}</Text>
           <View style={styles.passwordInput}>
             <TextInput
               style={styles.passwordField}
               value={passwordData.confirmPassword}
               onChangeText={(text) => setPasswordData({ ...passwordData, confirmPassword: text })}
-              placeholder="Confirm new password"
+              placeholder={t('profileEdit.confirm_password_placeholder')}
               secureTextEntry={!showConfirmPassword}
             />
             <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
@@ -289,7 +291,7 @@ export default function ProfileEditScreen({ navigation }: any) {
           onPress={handleChangePassword}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? "Changing..." : "Change Password"}</Text>
+          <Text style={styles.buttonText}>{loading ? t('profileEdit.changing') : t('profileEdit.change')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

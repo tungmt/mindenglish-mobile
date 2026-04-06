@@ -3,8 +3,10 @@
 import { useState } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 
 export default function SettingsScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const [settings, setSettings] = useState({
     notifications: true,
     autoDownload: false,
@@ -26,17 +28,17 @@ export default function SettingsScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Audio Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Audio Settings</Text>
+          <Text style={styles.sectionTitle}>{t('settings.audio')}</Text>
 
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Default Playback Speed</Text>
+            <Text style={styles.settingLabel}>{t('settings.playback_speed')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {playbackSpeeds.map((speed) => (
                 <TouchableOpacity
@@ -55,20 +57,20 @@ export default function SettingsScreen({ navigation }: any) {
 
         {/* Download Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Download Settings</Text>
+          <Text style={styles.sectionTitle}>{t('settings.download')}</Text>
 
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Auto Download</Text>
-              <Text style={styles.settingSubtitle}>Automatically download new lessons</Text>
+              <Text style={styles.settingTitle}>{t('settings.auto_download')}</Text>
+              <Text style={styles.settingSubtitle}>{t('settings.auto_download_sub')}</Text>
             </View>
             <Switch value={settings.autoDownload} onValueChange={(value) => updateSetting("autoDownload", value)} />
           </View>
 
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>WiFi Only</Text>
-              <Text style={styles.settingSubtitle}>Download only when connected to WiFi</Text>
+              <Text style={styles.settingTitle}>{t('settings.wifi_only')}</Text>
+              <Text style={styles.settingSubtitle}>{t('settings.wifi_only_sub')}</Text>
             </View>
             <Switch value={settings.wifiOnly} onValueChange={(value) => updateSetting("wifiOnly", value)} />
           </View>
@@ -76,12 +78,12 @@ export default function SettingsScreen({ navigation }: any) {
 
         {/* Notification Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
+          <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>
 
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Push Notifications</Text>
-              <Text style={styles.settingSubtitle}>Receive learning reminders</Text>
+              <Text style={styles.settingTitle}>{t('settings.push_notifications')}</Text>
+              <Text style={styles.settingSubtitle}>{t('settings.push_sub')}</Text>
             </View>
             <Switch value={settings.notifications} onValueChange={(value) => updateSetting("notifications", value)} />
           </View>
@@ -89,12 +91,12 @@ export default function SettingsScreen({ navigation }: any) {
 
         {/* App Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Settings</Text>
+          <Text style={styles.sectionTitle}>{t('settings.app_settings')}</Text>
 
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Dark Mode</Text>
-              <Text style={styles.settingSubtitle}>Use dark theme</Text>
+              <Text style={styles.settingTitle}>{t('settings.dark_mode')}</Text>
+              <Text style={styles.settingSubtitle}>{t('settings.dark_mode_sub')}</Text>
             </View>
             <Switch value={settings.darkMode} onValueChange={(value) => updateSetting("darkMode", value)} />
           </View>

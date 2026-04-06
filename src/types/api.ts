@@ -76,6 +76,7 @@ export interface Progress {
   status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
   progress: number;
   currentTime?: number;
+  completedAt?: string;
   createdAt: string;
   updatedAt: string;
   lesson?: Lesson;

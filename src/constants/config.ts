@@ -8,7 +8,7 @@
 const getBaseURL = () => {
   // If you're using a physical device, update this with your computer's IP address
   // You can find your IP by running 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux)
-  const DEVELOPMENT_IP = "192.168.1.211" // Update this with your computer's local IP
+  const DEVELOPMENT_IP = "192.168.1.237" // Update this with your computer's local IP
   const DEVELOPMENT_PORT = "3000"
   
   // For production, set this environment variable

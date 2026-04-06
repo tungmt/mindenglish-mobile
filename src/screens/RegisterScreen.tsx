@@ -13,9 +13,11 @@ import {
   ScrollView,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 
 export default function RegisterScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     email: "",
     name: "",
@@ -34,22 +36,22 @@ export default function RegisterScreen({ navigation }: any) {
 
   const handleRegister = async () => {
     if (!formData.email.trim() || !formData.name.trim() || !formData.password.trim()) {
-      Alert.alert("Error", "Please fill in all required fields")
+      Alert.alert(t('common.error'), t('register.error_fill_fields'))
       return
     }
 
     if (!validateEmail(formData.email)) {
-      Alert.alert("Error", "Please enter a valid email address")
+      Alert.alert(t('common.error'), t('register.error_valid_email'))
       return
     }
 
     if (formData.password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long")
+      Alert.alert(t('common.error'), t('register.error_password_length'))
       return
     }
 
     if (formData.password !== formData.confirmPassword) {
-      Alert.alert("Error", "Passwords do not match")
+      Alert.alert(t('common.error'), t('register.error_passwords_match'))
       return
     }
 
@@ -62,11 +64,11 @@ export default function RegisterScreen({ navigation }: any) {
     setLoading(false)
 
     if (success) {
-      Alert.alert("Success", "Registration successful! Please sign in with your credentials.", [
-        { text: "OK", onPress: () => navigation.navigate("Auth") },
+      Alert.alert(t('common.success'), t('register.success'), [
+        { text: t('common.ok'), onPress: () => navigation.navigate("Auth") },
       ])
     } else {
-      Alert.alert("Error", "Registration failed. Please try again.")
+      Alert.alert(t('common.error'), t('register.error_failed'))
     }
   }
 
@@ -77,8 +79,8 @@ export default function RegisterScreen({ navigation }: any) {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Fill in your details to get started</Text>
+          <Text style={styles.title}>{t('register.title')}</Text>
+          <Text style={styles.subtitle}>{t('register.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
@@ -86,7 +88,7 @@ export default function RegisterScreen({ navigation }: any) {
             <Ionicons name="person" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Full Name *"
+              placeholder={t('register.full_name')}
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
             />
@@ -96,7 +98,7 @@ export default function RegisterScreen({ navigation }: any) {
             <Ionicons name="mail" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Email *"
+              placeholder={t('register.email')}
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
               keyboardType="email-address"
@@ -109,7 +111,7 @@ export default function RegisterScreen({ navigation }: any) {
             <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Password *"
+              placeholder={t('register.password')}
               value={formData.password}
               onChangeText={(text) => setFormData({ ...formData, password: text })}
               secureTextEntry={!showPassword}
@@ -130,7 +132,7 @@ export default function RegisterScreen({ navigation }: any) {
             <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Confirm Password *"
+              placeholder={t('register.confirm_password')}
               value={formData.confirmPassword}
               onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
               secureTextEntry={!showConfirmPassword}
@@ -152,11 +154,11 @@ export default function RegisterScreen({ navigation }: any) {
             onPress={handleRegister}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>{loading ? "Creating Account..." : "Create Account"}</Text>
+            <Text style={styles.buttonText}>{loading ? t('register.creating') : t('register.create')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.navigate("Auth")}>
-            <Text style={styles.linkText}>Already have an account? Sign In</Text>
+            <Text style={styles.linkText}>{t('register.have_account')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

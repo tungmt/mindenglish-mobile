@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 import { useAudio } from "../context/AudioContext"
 import { apiService } from "../services/api"
@@ -32,6 +33,7 @@ interface PopularAudio {
 }
 
 export default function HomeScreen({ navigation }: any) {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const { currentTrack, playTrack } = useAudio()
   const [recentAudios, setRecentAudios] = useState<RecentAudio[]>([])
@@ -52,27 +54,27 @@ export default function HomeScreen({ navigation }: any) {
     try {
       // Load user progress for recent listening
       const progressData = await apiService.getUserProgress()
-      
+
       // Get recent lessons with progress
       const recentLessonsWithProgress = (progressData || [])
         .filter((p: any) => p.status === 'IN_PROGRESS' || p.currentTime > 0)
         .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         .slice(0, 3)
-      
+
       // Load lesson details and course info for recent items
       const recentAudiosData = await Promise.all(
         recentLessonsWithProgress.map(async (progress: any) => {
           try {
             const lesson: any = await apiService.getLessonById(progress.lessonId)
-            let courseName = 'Unknown'
-            
+            let courseName = t('home.unknown_course')
+
             // Get course name from module relationship
             if (lesson.module?.course) {
               courseName = lesson.module.course.title
             } else if (lesson.chapter?.audioBook) {
               courseName = lesson.chapter.audioBook.title
             }
-            
+
             return {
               id: lesson.id,
               title: lesson.title,
@@ -87,15 +89,15 @@ export default function HomeScreen({ navigation }: any) {
           }
         })
       )
-      
+
       setRecentAudios(recentAudiosData.filter(Boolean) as RecentAudio[])
 
       // Calculate today's stats from progress
       const completedToday = (progressData || []).filter((p: any) => {
         const completedDate = new Date(p.completedAt)
         const today = new Date()
-        return p.status === 'COMPLETED' && 
-               completedDate.toDateString() === today.toDateString()
+        return p.status === 'COMPLETED' &&
+          completedDate.toDateString() === today.toDateString()
       }).length
 
       setTodayStats({
@@ -112,7 +114,7 @@ export default function HomeScreen({ navigation }: any) {
         listenerCount: course._count?.favorites || 0,
         thumbnail: course.coverImage || course.avatar || '/placeholder.svg',
       }))
-      
+
       setPopularAudios(popularAudiosData)
     } catch (error) {
       console.error("Error loading home data:", error)
@@ -134,11 +136,11 @@ export default function HomeScreen({ navigation }: any) {
 
   const getGreeting = () => {
     const hour = new Date().getHours()
-    const name = user?.name || "Thảo"
+    const name = user?.name || user?.email?.split('@')[0] || 'there'
 
-    if (hour < 12) return `Chào buổi sáng, ${name}!`
-    if (hour < 18) return `Chào buổi chiều, ${name}!`
-    return `Chào buổi tối, ${name}!`
+    if (hour < 12) return t('home.greeting_morning', { name })
+    if (hour < 18) return t('home.greeting_afternoon', { name })
+    return t('home.greeting_evening', { name })
   }
 
   const formatTime = (minutes: number) => {
@@ -183,7 +185,7 @@ export default function HomeScreen({ navigation }: any) {
         <Text style={styles.popularAudioTitle} numberOfLines={1}>
           {audio.title}
         </Text>
-        <Text style={styles.popularAudioListeners}>{audio.listenerCount} người đang nghe</Text>
+        <Text style={styles.popularAudioListeners}>{t('home.listeners_count', { count: audio.listenerCount })}</Text>
       </View>
       <Ionicons name="trending-up" size={16} color="#FF9500" />
     </TouchableOpacity>
@@ -196,10 +198,10 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.celebrationOverlay}>
           <View style={styles.celebrationModal}>
             <Ionicons name="trophy" size={60} color="#FFD700" />
-            <Text style={styles.celebrationTitle}>Chúc mừng!</Text>
-            <Text style={styles.celebrationText}>Bạn đã hoàn thành Ngày 4</Text>
+            <Text style={styles.celebrationTitle}>{t('home.celebration_title')}</Text>
+            <Text style={styles.celebrationText}>{t('home.celebration_text', { lesson: 'Ngày 4' })}</Text>
             <TouchableOpacity style={styles.celebrationButton} onPress={() => setShowCelebration(false)}>
-              <Text style={styles.celebrationButtonText}>Tiếp tục</Text>
+              <Text style={styles.celebrationButtonText}>{t('home.celebration_btn')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -209,18 +211,18 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>{getGreeting()}</Text>
-          <Text style={styles.subtitle}>Hôm nay bạn muốn học gì?</Text>
+          <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
         </View>
-        <TouchableOpacity style={styles.notificationButton}>
+        {/* <TouchableOpacity style={styles.notificationButton}>
           <Ionicons name="notifications-outline" size={24} color="#333" />
           <View style={styles.notificationBadge} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Continue Listening */}
       {currentTrack && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tiếp tục nghe</Text>
+          <Text style={styles.sectionTitle}>{t('home.continue_listening')}</Text>
           <TouchableOpacity style={styles.continueCard} onPress={() => navigation.navigate("AudioPlayer")}>
             <Image
               source={{
@@ -230,7 +232,7 @@ export default function HomeScreen({ navigation }: any) {
             />
             <View style={styles.continueInfo}>
               <Text style={styles.continueTitle}>{currentTrack.title}</Text>
-              <Text style={styles.continueSubtitle}>Chạm để tiếp tục</Text>
+              <Text style={styles.continueSubtitle}>{t('home.tap_to_continue')}</Text>
             </View>
             <View style={styles.continueButton}>
               <Ionicons name="play" size={24} color="white" />
@@ -241,43 +243,47 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Today's Progress */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Tiến độ hôm nay</Text>
+        <Text style={styles.sectionTitle}>{t('home.today_progress')}</Text>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Ionicons name="time-outline" size={24} color="#007AFF" />
             <Text style={styles.statNumber}>{formatTime(todayStats.listeningTime)}</Text>
-            <Text style={styles.statLabel}>Đã nghe</Text>
+            <Text style={styles.statLabel}>{t('home.stat_listened')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="checkmark-circle-outline" size={24} color="#34C759" />
             <Text style={styles.statNumber}>{todayStats.completedLessons}</Text>
-            <Text style={styles.statLabel}>Hoàn thành</Text>
+            <Text style={styles.statLabel}>{t('home.stat_completed')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="flame-outline" size={24} color="#FF9500" />
             <Text style={styles.statNumber}>{todayStats.streak}</Text>
-            <Text style={styles.statLabel}>Chuỗi ngày</Text>
+            <Text style={styles.statLabel}>{t('home.stat_streak')}</Text>
           </View>
         </View>
       </View>
 
       {/* Recent Listening */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nghe gần đây</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Library")}>
-            <Text style={styles.seeAllText}>Xem tất cả</Text>
-          </TouchableOpacity>
-        </View>
-        {recentAudios.map(renderRecentAudio)}
-      </View>
+      {
+        recentAudios.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('home.recently_listened')}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Library")}>
+                <Text style={styles.seeAllText}>{t('home.see_all')}</Text>
+              </TouchableOpacity>
+            </View>
+            {recentAudios.map(renderRecentAudio)}
+          </View>
+        )
+      }
 
       {/* Popular in Community */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Phổ biến trong cộng đồng</Text>
+          <Text style={styles.sectionTitle}>{t('home.popular_title')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate("Community")}>
-            <Text style={styles.seeAllText}>Xem thêm</Text>
+            <Text style={styles.seeAllText}>{t('home.see_more')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.popularContainer}>{popularAudios.map(renderPopularAudio)}</View>
@@ -285,18 +291,18 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Khám phá</Text>
+        <Text style={styles.sectionTitle}>{t('home.explore')}</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate("Library")}>
             <Ionicons name="library-outline" size={32} color="#007AFF" />
-            <Text style={styles.quickActionTitle}>Thư viện</Text>
-            <Text style={styles.quickActionSubtitle}>Tất cả audio books</Text>
+            <Text style={styles.quickActionTitle}>{t('home.library')}</Text>
+            <Text style={styles.quickActionSubtitle}>{t('home.all_audiobooks')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate("Progress")}>
             <Ionicons name="analytics-outline" size={32} color="#34C759" />
-            <Text style={styles.quickActionTitle}>Tiến độ</Text>
-            <Text style={styles.quickActionSubtitle}>Theo dõi học tập</Text>
+            <Text style={styles.quickActionTitle}>{t('home.progress')}</Text>
+            <Text style={styles.quickActionSubtitle}>{t('home.track_learning')}</Text>
           </TouchableOpacity>
         </View>
       </View>
