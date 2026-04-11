@@ -55,36 +55,38 @@ export default function HomeScreen({ navigation }: any) {
       // Load user progress for recent listening
       const progressData = await apiService.getUserProgress()
 
-      // Get recent lessons with progress
-      const recentLessonsWithProgress = (progressData || [])
+      // Get recent posts with progress
+      const recentPostsWithProgress = (progressData || [])
         .filter((p: any) => p.status === 'IN_PROGRESS' || p.currentTime > 0)
         .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         .slice(0, 3)
 
-      // Load lesson details and course info for recent items
+      // Load post details and book/course info for recent items
       const recentAudiosData = await Promise.all(
-        recentLessonsWithProgress.map(async (progress: any) => {
+        recentPostsWithProgress.map(async (progress: any) => {
           try {
-            const lesson: any = await apiService.getLessonById(progress.lessonId)
+            const post: any = await apiService.getPostById(progress.postId)
             let courseName = t('home.unknown_course')
 
-            // Get course name from module relationship
-            if (lesson.module?.course) {
-              courseName = lesson.module.course.title
-            } else if (lesson.chapter?.audioBook) {
-              courseName = lesson.chapter.audioBook.title
+            // Get course/book name from relationships
+            if (progress.book) {
+              courseName = progress.book.title
+            } else if (progress.course) {
+              courseName = progress.course.title
+            } else if (post.bookPosts?.[0]?.book) {
+              courseName = post.bookPosts[0].book.title
             }
 
             return {
-              id: lesson.id,
-              title: lesson.title,
+              id: post.id,
+              title: post.title,
               courseName: courseName,
-              duration: (lesson.duration || 0) * 1000, // Convert to milliseconds
-              progress: lesson.duration ? (progress.currentTime || 0) / lesson.duration : 0,
-              thumbnail: lesson.coverImage || lesson.avatar || '/placeholder.svg',
+              duration: (post.duration || 0) * 1000, // Convert to milliseconds
+              progress: post.duration ? (progress.currentTime || 0) / post.duration : 0,
+              thumbnail: post.avatar || '/placeholder.svg',
             }
           } catch (err) {
-            console.error('Error loading lesson:', err)
+            console.error('Error loading post:', err)
             return null
           }
         })
@@ -106,7 +108,7 @@ export default function HomeScreen({ navigation }: any) {
         streak: 0, // TODO: Calculate streak from listening stats
       })
 
-      // Load popular courses
+      // Load popular courses/books
       const coursesResponse = await apiService.getCourses({ page: 1, limit: 5 })
       const popularAudiosData = (coursesResponse.courses || []).slice(0, 3).map((course: any) => ({
         id: course.id,
@@ -296,7 +298,7 @@ export default function HomeScreen({ navigation }: any) {
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate("Library")}>
             <Ionicons name="library-outline" size={32} color="#007AFF" />
             <Text style={styles.quickActionTitle}>{t('home.library')}</Text>
-            <Text style={styles.quickActionSubtitle}>{t('home.all_audiobooks')}</Text>
+            <Text style={styles.quickActionSubtitle}>{t('home.all_books')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate("Progress")}>

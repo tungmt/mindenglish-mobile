@@ -29,12 +29,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await AsyncStorage.getItem("user")
       const token = await AsyncStorage.getItem("token")
 
+
       if (userData && token) {
         setUser(JSON.parse(userData))
         // Optionally refresh user data from API
         try {
+          console.log("User data start from API")
           const freshUserData = await apiService.getUserProfile()
           setUser(freshUserData)
+          console.log("User data refreshed from API")
           await AsyncStorage.setItem("user", JSON.stringify(freshUserData))
         } catch (error) {
           console.log("Could not refresh user data:", error)

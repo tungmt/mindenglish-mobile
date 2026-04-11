@@ -14,24 +14,35 @@ interface Course {
   thumbnail: string
   instructor: string
   duration: number
-  lessonsCount: number
+  booksCount: number
+  postsCount: number
   level: string
   category: string
   price: number
+  accessMode: "SEQUENCE" | "PARALLEL"
   isEnrolled: boolean
   rating: number
-  lessons: Lesson[]
+  books: Book[]
 }
 
-interface Lesson {
+interface Book {
+  id: string
+  title: string
+  bookType: "AUDIO" | "ARTICLE"
+  postsCount: number
+  posts: Post[]
+}
+
+interface Post {
   id: string
   title: string
   duration: number
+  postType: "AUDIO" | "ARTICLE"
   isCompleted: boolean
   isLocked: boolean
   order: number
-  audioUrl: string
-  script?: string
+  audioUrl?: string
+  content?: string
 }
 
 export default function CourseDetailScreen({ navigation, route }: any) {
@@ -52,44 +63,70 @@ export default function CourseDetailScreen({ navigation, route }: any) {
       const courseData: any = await apiService.getCourseById(courseId)
       
       // Transform API data to match component interface
-      const lessons = courseData.modules?.flatMap((module: any) => 
-        module.lessons?.map((lesson: any) => {
+      const books = courseData.courseBooks?.map((cb: any, bookIndex: number) => {
+        const book = cb.book
+        const posts = book.bookPosts?.map((bp: any, postIndex: number) => {
+          const post = bp.post
           // Get progress info if available
-          const progressInfo = lesson.progress?.[0]
+          const progressInfo = post.userProgress
           const isCompleted = progressInfo?.status === 'COMPLETED'
-          const isFavorited = lesson.favorites?.length > 0
+          
+          // Determine if post is locked based on access mode
+          let isLocked = false
+          if (courseData.accessMode === 'SEQUENCE' && !courseData.isEnrolled) {
+            // In sequential mode, lock all posts if not enrolled
+            isLocked = true
+          } else if (courseData.accessMode === 'SEQUENCE' && postIndex > 0) {
+            // In sequential mode when enrolled, lock posts until previous is completed
+            const prevPost = book.bookPosts[postIndex - 1]?.post
+            const prevCompleted = prevPost?.userProgress?.status === 'COMPLETED'
+            isLocked = !prevCompleted
+          }
           
           return {
-            id: lesson.id,
-            title: lesson.title,
-            duration: (lesson.duration || 0) * 1000, // Convert seconds to milliseconds
+            id: post.id,
+            title: post.title,
+            duration: (post.duration || 0) * 1000, // Convert seconds to milliseconds
+            postType: post.postType,
             isCompleted: isCompleted,
-            isLocked: !courseData.isPublished, // Lock if course not published
-            order: lesson.order,
-            audioUrl: lesson.audioUrl || "",
-            script: lesson.script,
-            isFavorited: isFavorited,
+            isLocked: isLocked,
+            order: bp.order,
+            audioUrl: post.audioUrl || "",
+            content: post.content || "",
           }
         }) || []
-      ) || []
+        
+        return {
+          id: book.id,
+          title: book.title,
+          bookType: book.bookType,
+          postsCount: posts.length,
+          posts: posts,
+        }
+      }) || []
       
-      // Calculate total duration from all lessons
-      const totalDuration = lessons.reduce((sum, l) => sum + (l.duration || 0), 0)
+      // Calculate total posts and duration from all books
+      const totalPosts = books.reduce((sum: number, b: any) => sum + b.postsCount, 0)
+      const totalDuration = books.reduce((sum: number, b: any) => 
+        sum + b.posts.reduce((pSum: number, p: any) => pSum + (p.duration || 0), 0), 0
+      )
       
       setCourse({
         id: courseData.id,
         title: courseData.title,
         description: courseData.description || t('courseDetail.no_description'),
-        thumbnail: courseData.coverImage || courseData.avatar || "/placeholder.svg",
-        instructor: "Cô Thúy", // TODO: Add instructor field to course model
+        thumbnail: courseData.coverImage || "/placeholder.svg",
+        instructor: courseData.author || "MindEnglish",
         duration: totalDuration,
-        lessonsCount: lessons.length,
+        booksCount: books.length,
+        postsCount: totalPosts,
         level: courseData.level || "Beginner",
         category: "English Course",
-        price: 0, // TODO: Add price field to course model
+        accessMode: courseData.accessMode || "SEQUENCE",
+        price: courseData.price || 0,
         isEnrolled: courseData.isFavorited || false,
         rating: 4.8, // TODO: Add rating system
-        lessons: lessons,
+        books: books,
       })
     } catch (error) {
       console.error("Error loading course detail:", error)
@@ -106,7 +143,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
     setEnrolling(true)
     try {
       // Add to favorites to track enrollment
-      await apiService.addFavorite({ itemId: course.id, itemType: "COURSE" })
+      await apiService.addFavorite({ courseId: course.id })
       {
         setCourse({ ...course, isEnrolled: true })
         Alert.alert(t('common.success'), t('courseDetail.enrolled_success'))
@@ -118,24 +155,29 @@ export default function CourseDetailScreen({ navigation, route }: any) {
     }
   }
 
-  const handlePlayLesson = async (lesson: Lesson) => {
-    if (lesson.isLocked) {
-      Alert.alert(t('courseDetail.lesson_locked_title'), t('courseDetail.lesson_locked_msg'))
+  const handlePlayPost = async (post: Post, book: Book) => {
+    if (post.isLocked) {
+      Alert.alert(t('courseDetail.post_locked_title'), t('courseDetail.post_locked_msg'))
       return
     }
 
-    const audioTrack = {
-      id: lesson.id,
-      title: lesson.title,
-      url: lesson.audioUrl,
-      duration: lesson.duration,
-      courseId: course!.id,
-      script: lesson.script,
-      isCompleted: lesson.isCompleted,
-    }
+    if (post.postType === "AUDIO" && post.audioUrl) {
+      const audioTrack = {
+        id: post.id,
+        title: `${book.title} - ${post.title}`,
+        url: post.audioUrl,
+        duration: post.duration,
+        courseId: course!.id,
+        content: post.content,
+        isCompleted: post.isCompleted,
+      }
 
-    await playTrack(audioTrack)
-    navigation.navigate("AudioPlayer", { trackId: lesson.id })
+      await playTrack(audioTrack)
+      navigation.navigate("AudioPlayer", { trackId: post.id })
+    } else if (post.postType === "ARTICLE") {
+      // Navigate to article reader
+      Alert.alert(t('courseDetail.article_reading_coming_soon'))
+    }
   }
 
   const formatDuration = (milliseconds: number) => {
@@ -150,35 +192,57 @@ export default function CourseDetailScreen({ navigation, route }: any) {
     }).format(price)
   }
 
-  const renderLesson = ({ item: lesson }: { item: Lesson }) => (
+  const renderPost = (post: Post, book: Book) => (
     <TouchableOpacity
-      style={[styles.lessonItem, lesson.isLocked && styles.lessonLocked]}
-      onPress={() => handlePlayLesson(lesson)}
-      disabled={lesson.isLocked}
+      key={post.id}
+      style={[styles.lessonItem, post.isLocked && styles.lessonLocked]}
+      onPress={() => handlePlayPost(post, book)}
+      disabled={post.isLocked}
     >
       <View style={styles.lessonLeft}>
-        <View style={[styles.lessonNumber, lesson.isCompleted && styles.lessonCompleted]}>
-          {lesson.isCompleted ? (
+        <View style={[styles.lessonNumber, post.isCompleted && styles.lessonCompleted]}>
+          {post.isCompleted ? (
             <Ionicons name="checkmark" size={16} color="white" />
-          ) : lesson.isLocked ? (
+          ) : post.isLocked ? (
             <Ionicons name="lock-closed" size={16} color="#ccc" />
           ) : (
-            <Text style={styles.lessonNumberText}>{lesson.order}</Text>
+            <Ionicons
+              name={post.postType === "AUDIO" ? "musical-notes" : "document-text"}
+              size={16}
+              color="#007AFF"
+            />
           )}
         </View>
         <View style={styles.lessonInfo}>
-          <Text style={[styles.lessonTitle, lesson.isLocked && styles.lessonTitleLocked]}>{lesson.title}</Text>
-          <Text style={styles.lessonDuration}>{formatDuration(lesson.duration)}</Text>
+          <Text style={[styles.lessonTitle, post.isLocked && styles.lessonTitleLocked]}>{post.title}</Text>
+          {post.postType === "AUDIO" && (
+            <Text style={styles.lessonDuration}>{formatDuration(post.duration)}</Text>
+          )}
         </View>
       </View>
       <TouchableOpacity style={styles.lessonPlayButton}>
         <Ionicons
-          name={lesson.isLocked ? "lock-closed" : "play"}
+          name={post.isLocked ? "lock-closed" : post.postType === "AUDIO" ? "play" : "eye"}
           size={20}
-          color={lesson.isLocked ? "#ccc" : "#007AFF"}
+          color={post.isLocked ? "#ccc" : "#007AFF"}
         />
       </TouchableOpacity>
     </TouchableOpacity>
+  )
+
+  const renderBook = (book: Book) => (
+    <View key={book.id} style={styles.bookSection}>
+      <View style={styles.bookHeader}>
+        <Ionicons
+          name={book.bookType === "AUDIO" ? "musical-notes" : "document-text"}
+          size={20}
+          color="#007AFF"
+        />
+        <Text style={styles.bookTitle}>{book.title}</Text>
+        <Text style={styles.bookPostsCount}>({book.postsCount})</Text>
+      </View>
+      {book.posts.map((post) => renderPost(post, book))}
+    </View>
   )
 
   if (loading) {
@@ -225,7 +289,11 @@ export default function CourseDetailScreen({ navigation, route }: any) {
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="book-outline" size={16} color="#666" />
-                <Text style={styles.statText}>{t('courseDetail.lessons_count', { count: course.lessonsCount })}</Text>
+                <Text style={styles.statText}>{t('courseDetail.books_count', { count: course.booksCount })}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Ionicons name="list-outline" size={16} color="#666" />
+                <Text style={styles.statText}>{t('courseDetail.posts_count', { count: course.postsCount })}</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="star" size={16} color="#FFD700" />
@@ -236,6 +304,16 @@ export default function CourseDetailScreen({ navigation, route }: any) {
             <View style={styles.courseMeta}>
               <Text style={styles.courseLevel}>{course.level}</Text>
               <Text style={styles.courseCategory}>{course.category}</Text>
+              <View style={styles.courseAccessMode}>
+                <Ionicons
+                  name={course.accessMode === "SEQUENCE" ? "arrow-forward" : "apps"}
+                  size={12}
+                  color="#7b1fa2"
+                />
+                <Text style={styles.courseAccessModeText}>
+                  {course.accessMode === "SEQUENCE" ? t('courseDetail.sequential') : t('courseDetail.parallel')}
+                </Text>
+              </View>
             </View>
 
             <Text style={styles.courseDescription}>{course.description}</Text>
@@ -255,15 +333,10 @@ export default function CourseDetailScreen({ navigation, route }: any) {
           </View>
         </View>
 
-        {/* Lessons List */}
+        {/* Books and Posts List */}
         <View style={styles.lessonsSection}>
-          <Text style={styles.sectionTitle}>{t('courseDetail.lessons_list')}</Text>
-          <FlatList
-            data={course.lessons}
-            renderItem={renderLesson}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-          />
+          <Text style={styles.sectionTitle}>{t('courseDetail.content_list')}</Text>
+          {course.books.map(renderBook)}
         </View>
       </ScrollView>
     </View>
@@ -348,6 +421,7 @@ const styles = StyleSheet.create({
   courseMeta: {
     flexDirection: "row",
     marginBottom: 15,
+    flexWrap: "wrap",
   },
   courseLevel: {
     backgroundColor: "#e3f2fd",
@@ -367,6 +441,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 12,
     fontWeight: "600",
+    marginRight: 10,
+  },
+  courseAccessMode: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff3e0",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  courseAccessModeText: {
+    color: "#e65100",
+    fontSize: 12,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   courseDescription: {
     fontSize: 16,
@@ -415,6 +504,29 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
     marginBottom: 15,
+  },
+  bookSection: {
+    marginBottom: 20,
+  },
+  bookHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginLeft: 8,
+    flex: 1,
+  },
+  bookPostsCount: {
+    fontSize: 14,
+    color: "#666",
   },
   lessonItem: {
     flexDirection: "row",

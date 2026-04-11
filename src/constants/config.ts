@@ -8,7 +8,7 @@
 const getBaseURL = () => {
   // If you're using a physical device, update this with your computer's IP address
   // You can find your IP by running 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux)
-  const DEVELOPMENT_IP = "192.168.1.237" // Update this with your computer's local IP
+  const DEVELOPMENT_IP = "192.168.1.211" // Update this with your computer's local IP
   const DEVELOPMENT_PORT = "3000"
   
   // For production, set this environment variable
@@ -38,13 +38,13 @@ export const API_CONFIG = {
     USER_COURSES: "/api/user/courses",
     USER_COURSE_BY_ID: (id: string) => `/api/user/courses/${id}`,
     
-    // User Lessons
-    USER_LESSONS: "/api/user/lessons",
-    USER_LESSON_BY_ID: (id: string) => `/api/user/lessons/${id}`,
+    // User Books
+    USER_BOOKS: "/api/user/books",
+    USER_BOOK_BY_ID: (id: string) => `/api/user/books/${id}`,
     
-    // User Audiobooks
-    USER_AUDIOBOOKS: "/api/user/audiobooks",
-    USER_AUDIOBOOK_BY_ID: (id: string) => `/api/user/audiobooks/${id}`,
+    // User Posts
+    USER_POSTS: "/api/user/posts",
+    USER_POST_BY_ID: (id: string) => `/api/user/posts/${id}`,
     
     // User Progress
     USER_PROGRESS: "/api/user/progress",

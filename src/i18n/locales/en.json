@@ -10,7 +10,8 @@
     "retry": "Retry",
     "edit": "Edit",
     "delete": "Delete",
-    "by": "by {{name}}"
+    "by": "by {{name}}",
+    "unknown_author": "Unknown Author"
   },
   "tabbar": {
     "home": "Home",
@@ -36,6 +37,7 @@
     "explore": "Explore",
     "library": "Library",
     "all_audiobooks": "All audio books",
+    "all_books": "All books",
     "progress": "Progress",
     "track_learning": "Track your learning",
     "celebration_title": "Congratulations!",
@@ -135,7 +137,11 @@
     "delete_confirm": "Are you sure you want to delete your account? This action cannot be undone and all your progress will be lost.",
     "delete_not_available": "Account deletion is not available in the current API version.",
     "version": "MindEnglish v1.0.0",
-    "made_with": "Made with ❤️ for English learners"
+    "made_with": "Made with ❤️ for English learners",
+    "language": "Language",
+    "language_select": "Select your language",
+    "language_en": "English",
+    "language_vi": "Tiếng Việt"
   },
   "settings": {
     "title": "Settings",
@@ -155,11 +161,13 @@
   },
   "library": {
     "title": "Library",
-    "search_placeholder": "Search audio books, courses...",
+    "search_placeholder": "Search books, courses...",
     "tab_audiobooks": "Audio Books",
+    "tab_books": "Books",
     "tab_courses": "Courses",
     "chapters": "{{count}} chapters",
     "modules": "{{count}} modules",
+    "posts": "{{count}} posts",
     "downloaded": "Downloaded",
     "enrolled": "Enrolled"
   },
@@ -231,17 +239,25 @@
   "courseDetail": {
     "title": "Course Detail",
     "lessons_count": "{{count}} lessons",
+    "books_count": "{{count}} books",
+    "posts_count": "{{count}} posts",
     "enrolling": "Enrolling...",
     "enroll": "Enroll Now",
     "enrolled_success": "Course enrolled successfully!",
     "lessons_list": "Lessons",
+    "content_list": "Content",
     "lesson_locked_title": "Lesson Locked",
     "lesson_locked_msg": "Please enroll to unlock this lesson.",
+    "post_locked_title": "Post Locked",
+    "post_locked_msg": "Please enroll to unlock this post.",
     "error_loading": "Failed to load course. Please try again.",
     "not_found": "Course not found",
     "enroll_error": "Enrollment failed. Please try again.",
     "no_description": "No description available",
-    "minutes_unit": "{{count}} min"
+    "minutes_unit": "{{count}} min",
+    "sequential": "Sequential",
+    "parallel": "Parallel",
+    "article_reading_coming_soon": "Article reading feature coming soon!"
   },
   "audioBookDetail": {
     "title": "Audio Book",
@@ -251,6 +267,21 @@
     "chapters_list": "Chapters",
     "not_found": "Audio book not found",
     "no_description": "No description available"
+  },
+  "bookDetail": {
+    "title": "Book",
+    "audio_book": "Audio Book",
+    "article_book": "Article Book",
+    "posts_count": "{{count}} posts",
+    "sequential": "Sequential",
+    "parallel": "Parallel",
+    "download_all": "Download All",
+    "content_list": "Content",
+    "not_found": "Book not found",
+    "no_description": "No description available",
+    "post_locked": "This post is locked. Complete previous posts to unlock.",
+    "article_reading_coming_soon": "Article reading feature coming soon!",
+    "error_loading": "Failed to load book. Please try again."
   },
   "profileEdit": {
     "title": "Edit Profile",

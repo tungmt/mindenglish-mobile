@@ -4,14 +4,18 @@ import { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAudio } from "../context/AudioContext"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useRoute } from "@react-navigation/native"
 
 interface FloatingAudioPlayerProps {
-  onPress: () => void
+  onPress: () => void,
+  currentScreenName: string,
 }
 
-export default function FloatingAudioPlayer({ onPress }: FloatingAudioPlayerProps) {
-  const { currentTrack, isPlaying, pauseTrack, resumeTrack, position, duration } = useAudio()
+export default function FloatingAudioPlayer({ onPress, currentScreenName }: FloatingAudioPlayerProps) {
+  const { currentTrack, stopTrack, isPlaying, pauseTrack, resumeTrack, position, duration } = useAudio()
   const [isMinimized, setIsMinimized] = useState(false)
+  const insets = useSafeAreaInsets()
 
   if (!currentTrack) return null
 
@@ -23,10 +27,16 @@ export default function FloatingAudioPlayer({ onPress }: FloatingAudioPlayerProp
     }
   }
 
+  const handleCloseTrack = () => {
+    stopTrack()
+  }
+
   const progress = duration > 0 ? (position / duration) * 100 : 0
 
+  if (!currentTrack || currentScreenName === "AudioPlayer") return null
+
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity style={[styles.container, {bottom: insets.bottom}]} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.progressBar}>
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
@@ -52,7 +62,7 @@ export default function FloatingAudioPlayer({ onPress }: FloatingAudioPlayerProp
           <Ionicons name={isPlaying ? "pause" : "play"} size={20} color="white" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.closeButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.closeButton} onPress={handleCloseTrack}>
           <Ionicons name="close" size={16} color="#666" />
         </TouchableOpacity>
       </View>
@@ -63,7 +73,6 @@ export default function FloatingAudioPlayer({ onPress }: FloatingAudioPlayerProp
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 90, // Above tab bar
     left: 10,
     right: 10,
     backgroundColor: "white",

@@ -4,15 +4,15 @@ import type {
   AuthResponse,
   User,
   Course,
-  Lesson,
-  Audiobook,
+  Book,
+  Post,
   Progress,
   Favorite,
   Comment,
   Note,
   CoursesResponse,
-  LessonsResponse,
-  AudiobooksResponse,
+  BooksResponse,
+  PostsResponse,
   LoginRequest,
   RegisterRequest,
   UpdateProfileRequest,
@@ -146,43 +146,48 @@ class ApiService {
     return this.makeRequest<Course>(API_CONFIG.ENDPOINTS.USER_COURSE_BY_ID(id))
   }
 
-  // ==================== Lesson APIs ====================
-  async getLessons(params?: { page?: number; limit?: number; courseId?: string }): Promise<LessonsResponse> {
+  // ==================== Book APIs ====================
+  async getBooks(params?: { page?: number; limit?: number; bookType?: string; level?: string }): Promise<BooksResponse> {
     const queryParams = new URLSearchParams()
     if (params?.page) queryParams.append("page", params.page.toString())
     if (params?.limit) queryParams.append("limit", params.limit.toString())
-    if (params?.courseId) queryParams.append("courseId", params.courseId)
+    if (params?.bookType) queryParams.append("bookType", params.bookType)
+    if (params?.level) queryParams.append("level", params.level)
 
     const query = queryParams.toString()
-    const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_LESSONS}?${query}` : API_CONFIG.ENDPOINTS.USER_LESSONS
+    const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_BOOKS}?${query}` : API_CONFIG.ENDPOINTS.USER_BOOKS
 
-    return this.makeRequest<LessonsResponse>(endpoint)
+    return this.makeRequest<BooksResponse>(endpoint)
   }
 
-  async getLessonById(id: string): Promise<Lesson> {
-    return this.makeRequest<Lesson>(API_CONFIG.ENDPOINTS.USER_LESSON_BY_ID(id))
+  async getBookById(id: string): Promise<Book> {
+    return this.makeRequest<Book>(API_CONFIG.ENDPOINTS.USER_BOOK_BY_ID(id))
   }
 
-  // ==================== Audiobook APIs ====================
-  async getAudiobooks(params?: { page?: number; limit?: number }): Promise<AudiobooksResponse> {
+  // ==================== Post APIs ====================
+  async getPosts(params?: { page?: number; limit?: number; postType?: string; bookId?: string }): Promise<PostsResponse> {
     const queryParams = new URLSearchParams()
     if (params?.page) queryParams.append("page", params.page.toString())
     if (params?.limit) queryParams.append("limit", params.limit.toString())
+    if (params?.postType) queryParams.append("postType", params.postType)
+    if (params?.bookId) queryParams.append("bookId", params.bookId)
 
     const query = queryParams.toString()
-    const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_AUDIOBOOKS}?${query}` : API_CONFIG.ENDPOINTS.USER_AUDIOBOOKS
+    const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_POSTS}?${query}` : API_CONFIG.ENDPOINTS.USER_POSTS
 
-    return this.makeRequest<AudiobooksResponse>(endpoint)
+    return this.makeRequest<PostsResponse>(endpoint)
   }
 
-  async getAudiobookById(id: string): Promise<Audiobook> {
-    return this.makeRequest<Audiobook>(API_CONFIG.ENDPOINTS.USER_AUDIOBOOK_BY_ID(id))
+  async getPostById(id: string): Promise<Post> {
+    return this.makeRequest<Post>(API_CONFIG.ENDPOINTS.USER_POST_BY_ID(id))
   }
 
   // ==================== Progress APIs ====================
-  async getUserProgress(params?: { lessonId?: string }): Promise<Progress[]> {
+  async getUserProgress(params?: { postId?: string; bookId?: string; courseId?: string }): Promise<Progress[]> {
     const queryParams = new URLSearchParams()
-    if (params?.lessonId) queryParams.append("lessonId", params.lessonId)
+    if (params?.postId) queryParams.append("postId", params.postId)
+    if (params?.bookId) queryParams.append("bookId", params.bookId)
+    if (params?.courseId) queryParams.append("courseId", params.courseId)
 
     const query = queryParams.toString()
     const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_PROGRESS}?${query}` : API_CONFIG.ENDPOINTS.USER_PROGRESS
@@ -217,9 +222,11 @@ class ApiService {
   }
 
   // ==================== Comments APIs ====================
-  async getComments(params?: { lessonId?: string }): Promise<Comment[]> {
+  async getComments(params?: { postId?: string; bookId?: string; courseId?: string }): Promise<Comment[]> {
     const queryParams = new URLSearchParams()
-    if (params?.lessonId) queryParams.append("lessonId", params.lessonId)
+    if (params?.postId) queryParams.append("postId", params.postId)
+    if (params?.bookId) queryParams.append("bookId", params.bookId)
+    if (params?.courseId) queryParams.append("courseId", params.courseId)
 
     const query = queryParams.toString()
     const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_COMMENTS}?${query}` : API_CONFIG.ENDPOINTS.USER_COMMENTS
@@ -252,9 +259,11 @@ class ApiService {
   }
 
   // ==================== Notes APIs ====================
-  async getNotes(params?: { lessonId?: string }): Promise<Note[]> {
+  async getNotes(params?: { postId?: string; bookId?: string; courseId?: string }): Promise<Note[]> {
     const queryParams = new URLSearchParams()
-    if (params?.lessonId) queryParams.append("lessonId", params.lessonId)
+    if (params?.postId) queryParams.append("postId", params.postId)
+    if (params?.bookId) queryParams.append("bookId", params.bookId)
+    if (params?.courseId) queryParams.append("courseId", params.courseId)
 
     const query = queryParams.toString()
     const endpoint = query ? `${API_CONFIG.ENDPOINTS.USER_NOTES}?${query}` : API_CONFIG.ENDPOINTS.USER_NOTES

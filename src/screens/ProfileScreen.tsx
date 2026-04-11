@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert, Switch } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert, Switch, Modal } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
@@ -15,7 +15,7 @@ interface ProfileStats {
 }
 
 export default function ProfileScreen({ navigation }: any) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user, logout } = useAuth()
   const [profileStats, setProfileStats] = useState<ProfileStats>({
     totalListeningTime: 0,
@@ -25,6 +25,7 @@ export default function ProfileScreen({ navigation }: any) {
   })
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [languageModalVisible, setLanguageModalVisible] = useState(false)
 
   useEffect(() => {
     loadProfileData()
@@ -66,6 +67,15 @@ export default function ProfileScreen({ navigation }: any) {
       { text: t('common.cancel'), style: "cancel" },
       { text: t('profile.sign_out'), style: "destructive", onPress: logout },
     ])
+  }
+
+  const handleLanguageChange = (languageCode: string) => {
+    i18n.changeLanguage(languageCode)
+    setLanguageModalVisible(false)
+  }
+
+  const getLanguageDisplay = () => {
+    return i18n.language === 'vi' ? t('profile.language_vi') : t('profile.language_en')
   }
 
   const handleDeleteAccount = () => {
@@ -198,6 +208,8 @@ export default function ProfileScreen({ navigation }: any) {
       {/* Quick Settings */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('profile.quick_settings')}</Text>
+        
+        {/* Notifications Toggle */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
             <Ionicons name="notifications-outline" size={20} color="#666" />
@@ -213,6 +225,21 @@ export default function ProfileScreen({ navigation }: any) {
             thumbColor={notificationsEnabled ? "white" : "#f4f3f4"}
           />
         </View>
+
+        {/* Language Picker */}
+        <TouchableOpacity 
+          style={[styles.settingItem, { marginTop: 10 }]} 
+          onPress={() => setLanguageModalVisible(true)}
+        >
+          <View style={styles.settingInfo}>
+            <Ionicons name="language-outline" size={20} color="#666" />
+            <View style={styles.settingText}>
+              <Text style={styles.settingTitle}>{t('profile.language')}</Text>
+              <Text style={styles.settingSubtitle}>{getLanguageDisplay()}</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#ccc" />
+        </TouchableOpacity>
       </View>
 
       {/* Menu Items */}
@@ -249,6 +276,49 @@ export default function ProfileScreen({ navigation }: any) {
         <Text style={styles.footerText}>{t('profile.version')}</Text>
         <Text style={styles.footerText}>{t('profile.made_with')}</Text>
       </View>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={languageModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('profile.language_select')}</Text>
+              <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.languageOption, i18n.language === 'en' && styles.languageOptionActive]}
+              onPress={() => handleLanguageChange('en')}
+            >
+              <View style={styles.languageInfo}>
+                <Text style={styles.languageText}>🇺🇸 {t('profile.language_en')}</Text>
+              </View>
+              {i18n.language === 'en' && (
+                <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.languageOption, i18n.language === 'vi' && styles.languageOptionActive]}
+              onPress={() => handleLanguageChange('vi')}
+            >
+              <View style={styles.languageInfo}>
+                <Text style={styles.languageText}>🇻🇳 {t('profile.language_vi')}</Text>
+              </View>
+              {i18n.language === 'vi' && (
+                <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   )
 }
@@ -479,5 +549,50 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999",
     marginBottom: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+  },
+  languageOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
+    marginBottom: 10,
+  },
+  languageOptionActive: {
+    backgroundColor: "#e3f2fd",
+    borderWidth: 2,
+    borderColor: "#007AFF",
+  },
+  languageInfo: {
+    flex: 1,
+  },
+  languageText: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "500",
   },
 })

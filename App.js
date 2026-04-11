@@ -1,6 +1,6 @@
 import "./src/i18n"
-import { useEffect, useState } from "react"
-import { NavigationContainer, useNavigation } from "@react-navigation/native"
+import { useEffect, useState, useRef } from "react"
+import { NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createStackNavigator } from "@react-navigation/stack"
 import { StatusBar } from "expo-status-bar"
@@ -19,7 +19,7 @@ import SettingsScreen from "./src/screens/SettingsScreen"
 import SupportScreen from "./src/screens/SupportScreen"
 import HomeScreen from "./src/screens/HomeScreen"
 import LibraryScreen from "./src/screens/LibraryScreen"
-import AudioBookDetailScreen from "./src/screens/AudioBookDetailScreen"
+import BookDetailScreen from "./src/screens/BookDetailScreen"
 import CommunityScreen from "./src/screens/CommunityScreen"
 import FloatingAudioPlayer from "./src/components/FloatingAudioPlayer"
 
@@ -27,6 +27,7 @@ import FloatingAudioPlayer from "./src/components/FloatingAudioPlayer"
 import { AuthProvider, useAuth } from "./src/context/AuthContext"
 import { AudioProvider } from "./src/context/AudioContext"
 import Tabbar from "./src/components/Tabbar"
+import { SafeAreaProvider } from "react-native-safe-area-context"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -54,10 +55,9 @@ function AuthNavigator() {
   )
 }
 
-function AppNavigator() {
+function AppNavigator({ navigationRef, currentRouteName }) {
   const { user, loading } = useAuth()
   const [showSplash, setShowSplash] = useState(true)
-  const { navigate } = useNavigation()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -87,7 +87,7 @@ function AppNavigator() {
               }}
             />
             <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
-            <Stack.Screen name="AudioBookDetail" component={AudioBookDetailScreen} />
+            <Stack.Screen name="BookDetail" component={BookDetailScreen} />
             <Stack.Screen name="Community" component={CommunityScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Support" component={SupportScreen} />
@@ -100,8 +100,9 @@ function AppNavigator() {
       {user && (
         <FloatingAudioPlayer
           onPress={() => {
-              navigate("AudioPlayer")
+            navigationRef.current?.navigate("AudioPlayer")
           }}
+          currentScreenName={currentRouteName}
         />
       )}
     </View>
@@ -109,13 +110,35 @@ function AppNavigator() {
 }
 
 export default function App() {
+  const navigationRef = useRef()
+  const [currentRouteName, setCurrentRouteName] = useState()
+
+  const onNavigationStateChange = () => {
+    const state = navigationRef.current?.getRootState()
+    if (state) {
+      const route = state.routes[state.index]
+      // Handle nested navigators (Tab Navigator)
+      if (route.state) {
+        const nestedRoute = route.state.routes[route.state.index]
+        setCurrentRouteName(nestedRoute.name)
+      } else {
+        setCurrentRouteName(route.name)
+      }
+    }
+  }
+
   return (
     <AuthProvider>
       <AudioProvider>
-        <NavigationContainer>
-          <StatusBar style="auto" />
-          <AppNavigator />
-        </NavigationContainer>
+        <SafeAreaProvider>
+          <NavigationContainer 
+            ref={navigationRef}
+            onStateChange={onNavigationStateChange}
+          >
+            <StatusBar style="auto" />
+            <AppNavigator navigationRef={navigationRef} currentRouteName={currentRouteName} />
+          </NavigationContainer>
+        </SafeAreaProvider>
       </AudioProvider>
     </AuthProvider>
   )

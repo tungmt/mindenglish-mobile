@@ -10,7 +10,8 @@
     "retry": "Thử lại",
     "edit": "Chỉnh sửa",
     "delete": "Xóa",
-    "by": "bởi {{name}}"
+    "by": "bởi {{name}}",
+    "unknown_author": "Tác giả không xác định"
   },
   "tabbar": {
     "home": "Trang chủ",
@@ -36,6 +37,7 @@
     "explore": "Khám phá",
     "library": "Thư viện",
     "all_audiobooks": "Tất cả audio books",
+    "all_books": "Tất cả sách",
     "progress": "Tiến độ",
     "track_learning": "Theo dõi học tập",
     "celebration_title": "Chúc mừng!",
@@ -135,7 +137,11 @@
     "delete_confirm": "Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác và tất cả tiến độ học tập sẽ bị mất.",
     "delete_not_available": "Xóa tài khoản chưa khả dụng trong phiên bản API hiện tại.",
     "version": "MindEnglish v1.0.0",
-    "made_with": "Được làm với ❤️ cho người học tiếng Anh"
+    "made_with": "Được làm với ❤️ cho người học tiếng Anh",
+    "language": "Ngôn ngữ",
+    "language_select": "Chọn ngôn ngữ của bạn",
+    "language_en": "English",
+    "language_vi": "Tiếng Việt"
   },
   "settings": {
     "title": "Cài đặt",
@@ -155,11 +161,13 @@
   },
   "library": {
     "title": "Thư viện",
-    "search_placeholder": "Tìm kiếm audio books, khóa học...",
+    "search_placeholder": "Tìm sách, khóa học...",
     "tab_audiobooks": "Audio Books",
-    "tab_courses": "Chương trình học",
+    "tab_books": "Sách",
+    "tab_courses": "Khóa học",
     "chapters": "{{count}} chương",
     "modules": "{{count}} modules",
+    "posts": "{{count}} bài viết",
     "downloaded": "Đã tải",
     "enrolled": "Đã đăng ký"
   },
@@ -231,17 +239,25 @@
   "courseDetail": {
     "title": "Chi tiết khóa học",
     "lessons_count": "{{count}} bài học",
+    "books_count": "{{count}} sách",
+    "posts_count": "{{count}} bài viết",
     "enrolling": "Đang đăng ký...",
     "enroll": "Đăng ký ngay",
     "enrolled_success": "Đăng ký khóa học thành công!",
     "lessons_list": "Danh sách bài học",
+    "content_list": "Nội dung",
     "lesson_locked_title": "Bài học bị khóa",
     "lesson_locked_msg": "Vui lòng đăng ký khóa học để mở khóa bài học này.",
+    "post_locked_title": "Bài viết bị khóa",
+    "post_locked_msg": "Vui lòng đăng ký khóa học để mở khóa bài viết này.",
     "error_loading": "Không thể tải thông tin khóa học. Vui lòng thử lại.",
     "not_found": "Không tìm thấy khóa học",
     "enroll_error": "Đăng ký thất bại. Vui lòng thử lại.",
     "no_description": "Chưa có mô tả",
-    "minutes_unit": "{{count}} phút"
+    "minutes_unit": "{{count}} phút",
+    "sequential": "Tuần tự",
+    "parallel": "Song song",
+    "article_reading_coming_soon": "Tính năng đọc bài viết sắp ra mắt!"
   },
   "audioBookDetail": {
     "title": "Audio Book",
@@ -251,6 +267,21 @@
     "chapters_list": "Danh sách chương",
     "not_found": "Không tìm thấy audio book",
     "no_description": "Chưa có mô tả"
+  },
+  "bookDetail": {
+    "title": "Sách",
+    "audio_book": "Sách Audio",
+    "article_book": "Sách Bài viết",
+    "posts_count": "{{count}} bài viết",
+    "sequential": "Tuần tự",
+    "parallel": "Song song",
+    "download_all": "Tải xuống toàn bộ",
+    "content_list": "Nội dung",
+    "not_found": "Không tìm thấy sách",
+    "no_description": "Chưa có mô tả",
+    "post_locked": "Bài viết này đã khóa. Hoàn thành các bài trước để mở khóa.",
+    "article_reading_coming_soon": "Tính năng đọc bài viết sắp ra mắt!",
+    "error_loading": "Không thể tải thông tin sách. Vui lòng thử lại."
   },
   "profileEdit": {
     "title": "Chỉnh sửa hồ sơ",

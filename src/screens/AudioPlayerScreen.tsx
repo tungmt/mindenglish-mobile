@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   TextInput,
   Alert,
   Modal,
+  Animated,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import Slider from "@react-native-community/slider"
@@ -19,6 +20,8 @@ import { useTranslation } from "react-i18next"
 import { useAudio } from "../context/AudioContext"
 
 const { width, height } = Dimensions.get("window")
+const PLAYER_MAX_HEIGHT = 520
+const PLAYER_MIN_HEIGHT = 80
 
 interface Comment {
   id: string
@@ -59,6 +62,10 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
   const [showSpeedModal, setShowSpeedModal] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showCommentInput, setShowCommentInput] = useState(false)
+  const [isPlayerMinimized, setIsPlayerMinimized] = useState(false)
+
+  const scrollY = useRef(new Animated.Value(0)).current
+  const playerHeight = useRef(new Animated.Value(PLAYER_MAX_HEIGHT)).current
 
   const playbackSpeeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
 
@@ -68,6 +75,47 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
       navigation.goBack()
     }
   }, [currentTrack, trackId])
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y
+        if (offsetY > 50 && !isPlayerMinimized) {
+          minimizePlayer()
+        } else if (offsetY <= 10 && isPlayerMinimized) {
+          expandPlayer()
+        }
+      },
+    }
+  )
+
+  const minimizePlayer = () => {
+    setIsPlayerMinimized(true)
+    Animated.timing(playerHeight, {
+      toValue: PLAYER_MIN_HEIGHT,
+      duration: 300,
+      useNativeDriver: false,
+    }).start()
+  }
+
+  const expandPlayer = () => {
+    setIsPlayerMinimized(false)
+    Animated.timing(playerHeight, {
+      toValue: PLAYER_MAX_HEIGHT,
+      duration: 300,
+      useNativeDriver: false,
+    }).start()
+  }
+
+  const togglePlayerSize = () => {
+    if (isPlayerMinimized) {
+      expandPlayer()
+    } else {
+      minimizePlayer()
+    }
+  }
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000)
@@ -178,6 +226,24 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
     )
   }
 
+  const imageOpacity = playerHeight.interpolate({
+    inputRange: [PLAYER_MIN_HEIGHT, PLAYER_MAX_HEIGHT],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  })
+
+  const controlsOpacity = playerHeight.interpolate({
+    inputRange: [PLAYER_MIN_HEIGHT, PLAYER_MAX_HEIGHT * 0.4],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  })
+
+  const miniPlayerOpacity = playerHeight.interpolate({
+    inputRange: [PLAYER_MIN_HEIGHT, PLAYER_MAX_HEIGHT * 0.3],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  })
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -188,100 +254,133 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {currentTrack.title}
         </Text>
-        <TouchableOpacity onPress={() => {}}>
+        <TouchableOpacity onPress={() => { }}>
           <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
-      {/* Audio Info */}
-      <View style={styles.audioInfo}>
-        <Image
-          source={{ uri: `/placeholder.svg?height=200&width=200&text=${encodeURIComponent(currentTrack.title)}` }}
-          style={styles.audioImage}
-        />
-        <Text style={styles.audioTitle}>{currentTrack.title}</Text>
-        <Text style={styles.audioSubtitle}>MindEnglish</Text>
-      </View>
-
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <Slider
-          style={styles.progressSlider}
-          minimumValue={0}
-          maximumValue={duration}
-          value={position}
-          onValueChange={handleSeek}
-          minimumTrackTintColor="#007AFF"
-          maximumTrackTintColor="#E0E0E0"
-          thumbStyle={styles.sliderThumb}
-        />
-        <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>{formatTime(position)}</Text>
-          <Text style={styles.timeText}>{formatTime(duration)}</Text>
-        </View>
-      </View>
-
-      {/* Controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity style={styles.controlButton} onPress={() => seekTo(Math.max(0, position - 15000))}>
-          <Ionicons name="play-back" size={24} color="#333" />
-          <Text style={styles.controlLabel}>-15s</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause} disabled={isLoading}>
-          <Ionicons name={isPlaying ? "pause" : "play"} size={32} color="white" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.controlButton} onPress={() => seekTo(Math.min(duration, position + 15000))}>
-          <Ionicons name="play-forward" size={24} color="#333" />
-          <Text style={styles.controlLabel}>+15s</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Speed and Actions */}
-      <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => setShowSpeedModal(true)}>
-          <Text style={styles.speedText}>{playbackRate}x</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={handleToggleFavorite}>
-          <Ionicons
-            name={currentTrack.isFavorite ? "heart" : "heart-outline"}
-            size={24}
-            color={currentTrack.isFavorite ? "#FF3B30" : "#666"}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={handleDownload}>
-          {currentTrack.downloadProgress !== undefined ? (
-            <View style={styles.downloadProgress}>
-              <Text style={styles.downloadText}>{currentTrack.downloadProgress}%</Text>
-            </View>
-          ) : (
-            <Ionicons
-              name={currentTrack.isDownloaded ? "download" : "download-outline"}
-              size={24}
-              color={currentTrack.isDownloaded ? "#34C759" : "#666"}
+      {/* Collapsible Player Section */}
+      <Animated.View style={[styles.playerSection, { height: playerHeight }]}>
+        <TouchableOpacity 
+          activeOpacity={0.9} 
+          onPress={togglePlayerSize}
+          style={styles.playerTouchable}
+        >
+          {/* Minimized Player */}
+          <Animated.View style={[styles.miniPlayer, { opacity: miniPlayerOpacity }]}>
+            <Image
+              source={{ uri: `/placeholder.svg?height=60&width=60&text=${encodeURIComponent(currentTrack.title)}` }}
+              style={styles.miniPlayerImage}
             />
-          )}
-        </TouchableOpacity>
+            <View style={styles.miniPlayerInfo}>
+              <Text style={styles.miniPlayerTitle} numberOfLines={1}>{currentTrack.title}</Text>
+              <Text style={styles.miniPlayerSubtitle}>MindEnglish</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.miniPlayerButton} 
+              onPress={(e) => {
+                e.stopPropagation()
+                handlePlayPause()
+              }}
+            >
+              <Ionicons name={isPlaying ? "pause" : "play"} size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </Animated.View>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleMarkRepeat}>
-          <Ionicons
-            name={currentTrack.isMarkedForRepeat ? "repeat" : "repeat-outline"}
-            size={24}
-            color={currentTrack.isMarkedForRepeat ? "#007AFF" : "#666"}
-          />
-        </TouchableOpacity>
+          {/* Full Player */}
+          <Animated.View style={[styles.fullPlayer, { opacity: imageOpacity }]}>
+            {/* Audio Info */}
+            <View style={styles.audioInfo}>
+              <Image
+                source={{ uri: `/placeholder.svg?height=200&width=200&text=${encodeURIComponent(currentTrack.title)}` }}
+                style={styles.audioImage}
+              />
+              <Text style={styles.audioTitle}>{currentTrack.title}</Text>
+              <Text style={styles.audioSubtitle}>MindEnglish</Text>
+            </View>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleMarkCompleted}>
-          <Ionicons
-            name={currentTrack.isCompleted ? "checkmark-circle" : "checkmark-circle-outline"}
-            size={24}
-            color={currentTrack.isCompleted ? "#34C759" : "#666"}
-          />
+            {/* Progress Bar */}
+            <Animated.View style={[styles.progressContainer, { opacity: controlsOpacity }]}>
+              <Slider
+                style={styles.progressSlider}
+                minimumValue={0}
+                maximumValue={duration}
+                value={position}
+                onValueChange={handleSeek}
+                minimumTrackTintColor="#007AFF"
+                maximumTrackTintColor="#E0E0E0"
+                thumbTintColor="#007AFF"
+              />
+              <View style={styles.timeContainer}>
+                <Text style={styles.timeText}>{formatTime(position)}</Text>
+                <Text style={styles.timeText}>{formatTime(duration)}</Text>
+              </View>
+            </Animated.View>
+
+            {/* Controls */}
+            <Animated.View style={[styles.controls, { opacity: controlsOpacity }]}>
+              <TouchableOpacity style={styles.controlButton} onPress={() => seekTo(Math.max(0, position - 15000))}>
+                <Ionicons name="play-back" size={24} color="#333" />
+                <Text style={styles.controlLabel}>-15s</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.playButton} onPress={handlePlayPause} disabled={isLoading}>
+                <Ionicons name={isPlaying ? "pause" : "play"} size={32} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.controlButton} onPress={() => seekTo(Math.min(duration, position + 15000))}>
+                <Ionicons name="play-forward" size={24} color="#333" />
+                <Text style={styles.controlLabel}>+15s</Text>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Speed and Actions */}
+            <Animated.View style={[styles.actionsRow, { opacity: controlsOpacity }]}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => setShowSpeedModal(true)}>
+                <Text style={styles.speedText}>{playbackRate}x</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleToggleFavorite}>
+                <Ionicons
+                  name={currentTrack.isFavorite ? "heart" : "heart-outline"}
+                  size={24}
+                  color={currentTrack.isFavorite ? "#FF3B30" : "#666"}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleDownload}>
+                {currentTrack.downloadProgress !== undefined ? (
+                  <View style={styles.downloadProgress}>
+                    <Text style={styles.downloadText}>{currentTrack.downloadProgress}%</Text>
+                  </View>
+                ) : (
+                  <Ionicons
+                    name={currentTrack.isDownloaded ? "download" : "download-outline"}
+                    size={24}
+                    color={currentTrack.isDownloaded ? "#34C759" : "#666"}
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleMarkRepeat}>
+                <Ionicons
+                  name={currentTrack.isMarkedForRepeat ? "repeat" : "repeat-outline"}
+                  size={24}
+                  color={currentTrack.isMarkedForRepeat ? "#007AFF" : "#666"}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleMarkCompleted}>
+                <Ionicons
+                  name={currentTrack.isCompleted ? "checkmark-circle" : "checkmark-circle-outline"}
+                  size={24}
+                  color={currentTrack.isCompleted ? "#34C759" : "#666"}
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          </Animated.View>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Tabs */}
       <View style={styles.tabContainer}>
@@ -307,8 +406,14 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Tab Content */}
-      <ScrollView style={styles.tabContent}>
+      {/* Scrollable Content */}
+      <Animated.ScrollView
+        style={styles.contentScrollView}
+        contentContainerStyle={styles.contentScrollContainer}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={true}
+      >
         {activeTab === "transcript" && (
           <View style={styles.transcriptContainer}>
             <Text style={styles.transcriptText}>
@@ -339,7 +444,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
             )}
           </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Comment Input */}
       {activeTab === "comments" && (
@@ -413,6 +518,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+    backgroundColor: "#f8f9fa",
   },
   headerTitle: {
     fontSize: 16,
@@ -422,14 +528,63 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginHorizontal: 20,
   },
+  playerSection: {
+    backgroundColor: "#f8f9fa",
+    overflow: "hidden",
+  },
+  playerTouchable: {
+    flex: 1,
+  },
+  miniPlayer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: PLAYER_MIN_HEIGHT,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  miniPlayerImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  miniPlayerInfo: {
+    flex: 1,
+  },
+  miniPlayerTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  miniPlayerSubtitle: {
+    fontSize: 14,
+    color: "#666",
+  },
+  miniPlayerButton: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullPlayer: {
+    flex: 1,
+  },
   audioInfo: {
     alignItems: "center",
     paddingHorizontal: 40,
-    marginBottom: 30,
+    marginTop: 20,
+    marginBottom: 20,
   },
   audioImage: {
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
     borderRadius: 12,
     marginBottom: 20,
   },
@@ -446,16 +601,11 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     paddingHorizontal: 40,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   progressSlider: {
     width: "100%",
     height: 40,
-  },
-  sliderThumb: {
-    backgroundColor: "#007AFF",
-    width: 20,
-    height: 20,
   },
   timeContainer: {
     flexDirection: "row",
@@ -469,7 +619,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 30,
+    marginBottom: 20,
   },
   controlButton: {
     alignItems: "center",
@@ -497,7 +647,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     paddingHorizontal: 40,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   actionButton: {
     alignItems: "center",
@@ -544,14 +694,18 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: "white",
   },
-  tabContent: {
+  contentScrollView: {
     flex: 1,
+  },
+  contentScrollContainer: {
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   transcriptContainer: {
     backgroundColor: "white",
     borderRadius: 12,
     padding: 20,
+    minHeight: 300,
   },
   transcriptText: {
     fontSize: 16,
@@ -562,6 +716,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 12,
     padding: 20,
+    minHeight: 300,
   },
   notesText: {
     fontSize: 16,
@@ -572,6 +727,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 12,
     padding: 20,
+    minHeight: 300,
   },
   commentItem: {
     flexDirection: "row",

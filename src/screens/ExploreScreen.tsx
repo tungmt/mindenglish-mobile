@@ -24,7 +24,8 @@ interface Course {
   thumbnail: string
   instructor: string
   duration: number
-  lessonsCount: number
+  booksCount: number
+  postsCount: number
   level: string
   category: string
   price: number
@@ -61,11 +62,12 @@ export default function ExploreScreen({ navigation }: any) {
         description: course.description || "Chưa có mô tả",
         thumbnail: course.coverImage || course.avatar || "/placeholder.svg",
         instructor: "Cô Thúy", // TODO: Add instructor field to course model
-        duration: 0, // TODO: Calculate from lessons
-        lessonsCount: course.modules?.reduce((sum: number, m: any) => sum + (m.lessons?.length || 0), 0) || 0,
+        duration: 0, // TODO: Calculate from posts
+        booksCount: course._count?.courseBooks || 0,
+        postsCount: 0, // TODO: Calculate total posts from all books
         level: course.level || "BEGINNER",
         category: "Daily Life", // TODO: Add category field
-        price: 0, // TODO: Add price field to course model
+        price: course.price || 0,
         isEnrolled: course.isFavorited || false,
         rating: 4.8, // TODO: Add rating system
       }))
@@ -100,9 +102,8 @@ export default function ExploreScreen({ navigation }: any) {
 
   const handleEnrollCourse = async (courseId: string) => {
     try {
-      // Note: Enrollment may need to be implemented via favorites or progress
-      // For now, we'll add to favorites as a placeholder
-      await apiService.addFavorite({ itemId: courseId, itemType: "COURSE" })
+      // Add to favorites (enrollment tracking)
+      await apiService.addFavorite({ courseId })
       setCourses((prev) => prev.map((course) => (course.id === courseId ? { ...course, isEnrolled: true } : course)))
     } catch (error) {
       console.error("Error enrolling in course:", error)
@@ -146,7 +147,7 @@ export default function ExploreScreen({ navigation }: any) {
           </View>
           <View style={styles.statItem}>
             <Ionicons name="book-outline" size={14} color="#666" />
-            <Text style={styles.statText}>{course.lessonsCount} lessons</Text>
+            <Text style={styles.statText}>{course.booksCount} books</Text>
           </View>
           <View style={styles.statItem}>
             <Ionicons name="star" size={14} color="#FFD700" />

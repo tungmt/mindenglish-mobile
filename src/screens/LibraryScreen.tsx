@@ -14,17 +14,19 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
+import images from "../constants/images"
 
 const { width } = Dimensions.get("window")
 
-interface AudioBook {
+interface Book {
   id: string
   title: string
   author: string
   thumbnail: string
-  chaptersCount: number
+  postsCount: number
   totalDuration: number
   level: string
+  bookType: "AUDIO" | "ARTICLE"
   isDownloaded: boolean
   progress: number
 }
@@ -32,30 +34,21 @@ interface AudioBook {
 interface Course {
   id: string
   title: string
-  instructor: string
+  author: string
   thumbnail: string
-  modulesCount: number
+  booksCount: number
   totalDuration: number
   level: string
   isEnrolled: boolean
   progress: number
 }
 
-interface FeaturedLesson {
-  id: string
-  title: string
-  thumbnail: string
-  duration: number
-  courseName: string
-}
-
 export default function LibraryScreen({ navigation }: any) {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<"audiobooks" | "courses">("audiobooks")
+  const [activeTab, setActiveTab] = useState<"books" | "courses">("books")
   const [searchQuery, setSearchQuery] = useState("")
-  const [audioBooks, setAudioBooks] = useState<AudioBook[]>([])
+  const [books, setBooks] = useState<Book[]>([])
   const [courses, setCourses] = useState<Course[]>([])
-  const [featuredLessons, setFeaturedLessons] = useState<FeaturedLesson[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -64,12 +57,12 @@ export default function LibraryScreen({ navigation }: any) {
 
   const getFilteredData = () => {
     if (!searchQuery.trim()) {
-      return activeTab === "audiobooks" ? audioBooks : courses
+      return activeTab === "books" ? books : courses
     }
 
     const query = searchQuery.toLowerCase()
-    if (activeTab === "audiobooks") {
-      return audioBooks.filter((book) =>
+    if (activeTab === "books") {
+      return books.filter((book) =>
         book.title.toLowerCase().includes(query)
       )
     } else {
@@ -85,70 +78,49 @@ export default function LibraryScreen({ navigation }: any) {
       // Import the API service
       const { apiService } = await import("../services/api")
       
-      // Load audiobooks, courses, and featured lessons from API
-      const [audiobooksResponse, coursesResponse, lessonsResponse] = await Promise.all([
-        apiService.getAudiobooks({ page: 1, limit: 50 }),
+      // Load books and courses from API
+      const [booksResponse, coursesResponse] = await Promise.all([
+        apiService.getBooks({ page: 1, limit: 50 }),
         apiService.getCourses({ page: 1, limit: 50 }),
-        apiService.getLessons({ page: 1, limit: 10 }) // Get first 10 lessons as featured
       ])
 
-      console.log({ audiobooksResponse, coursesResponse, lessonsResponse })
+      console.log({ booksResponse, coursesResponse })
 
-      // Transform audiobooks data
-      const audiobooksData = (audiobooksResponse.audiobooks || []).map((audiobook: any) => ({
-        id: audiobook.id,
-        title: audiobook.title,
-        author: "Cô Thúy", // TODO: Add author field to audiobook model
-        thumbnail: audiobook.coverImage || "/placeholder.svg",
-        chaptersCount: audiobook._count?.chapters || 0,
-        totalDuration: 0, // TODO: Calculate from chapters
-        level: audiobook.level || "Beginner",
+      // Transform books data
+      const booksData = (booksResponse.books || []).map((book: any) => ({
+        id: book.id,
+        title: book.title,
+        author: book.author || "Unknown Author",
+        thumbnail: book.coverImage || book.avatar || images.appIcon,
+        postsCount: book._count?.bookPosts || 0,
+        totalDuration: 0, // TODO: Calculate from posts
+        level: book.level || "BEGINNER",
+        bookType: book.bookType || "AUDIO",
         isDownloaded: false, // TODO: Track downloads locally
         progress: 0, // TODO: Calculate from user progress
       }))
       
-      setAudioBooks(audiobooksData)
+      setBooks(booksData)
 
       // Transform courses data
       const coursesData = (coursesResponse.courses || []).map((course: any) => ({
         id: course.id,
         title: course.title,
-        instructor: "Cô Thúy", // TODO: Add instructor field to course model
-        thumbnail: course.coverImage || "/placeholder.svg",
-        modulesCount: course._count?.modules || 0,
-        totalDuration: 0, // TODO: Calculate from lessons
-        level: course.level || "Beginner",
+        author: course.author ?? '', // TODO: Add author field to course model
+        thumbnail: course.coverImage || images.appIcon,
+        booksCount: course._count?.courseBooks || 0,
+        totalDuration: 0, // TODO: Calculate from posts
+        level: course.level || "BEGINNER",
         isEnrolled: course.isPublished, // TODO: Track user enrollment
         progress: 0, // TODO: Calculate from user progress
       }))
       
       setCourses(coursesData)
-
-      // Transform featured lessons
-      const featuredLessonsData = (lessonsResponse.lessons || []).slice(0, 5).map((lesson: any) => {
-        let courseName = "Unknown"
-        if (lesson.module?.course) {
-          courseName = lesson.module.course.title
-        } else if (lesson.chapter?.audioBook) {
-          courseName = lesson.chapter.audioBook.title
-        }
-        
-        return {
-          id: lesson.id,
-          title: lesson.title,
-          thumbnail: lesson.coverImage || lesson.avatar || "/placeholder.svg",
-          duration: (lesson.duration || 0) * 1000,
-          courseName: courseName,
-        }
-      })
-      
-      setFeaturedLessons(featuredLessonsData)
     } catch (error) {
       console.error("Error loading library data:", error)
       // Initialize with empty data on error
-      setAudioBooks([])
+      setBooks([])
       setCourses([])
-      setFeaturedLessons([])
     } finally {
       setLoading(false)
     }
@@ -163,12 +135,12 @@ export default function LibraryScreen({ navigation }: any) {
     return `${minutes}m`
   }
 
-  const renderAudioBook = ({ item: book }: { item: AudioBook }) => (
+  const renderBook = ({ item: book }: { item: Book }) => (
     <TouchableOpacity
       style={styles.bookCard}
-      onPress={() => navigation.navigate("AudioBookDetail", { bookId: book.id })}
+      onPress={() => navigation.navigate("BookDetail", { bookId: book.id })}
     >
-      <Image source={{ uri: book.thumbnail }} style={styles.bookCover} />
+      <Image source={{ uri: book.thumbnail ?? images.appIcon }} style={styles.bookCover} />
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle} numberOfLines={2}>
           {book.title}
@@ -178,11 +150,11 @@ export default function LibraryScreen({ navigation }: any) {
         <View style={styles.bookMeta}>
           <View style={styles.bookMetaItem}>
             <Ionicons name="book-outline" size={14} color="#666" />
-            <Text style={styles.bookMetaText}>{t('library.chapters', { count: book.chaptersCount })}</Text>
+            <Text style={styles.bookMetaText}>{book.postsCount} posts</Text>
           </View>
           <View style={styles.bookMetaItem}>
-            <Ionicons name="time-outline" size={14} color="#666" />
-            <Text style={styles.bookMetaText}>{formatDuration(book.totalDuration)}</Text>
+            <Ionicons name={book.bookType === "AUDIO" ? "volume-high-outline" : "document-text-outline"} size={14} color="#666" />
+            <Text style={styles.bookMetaText}>{book.bookType === "AUDIO" ? "Audio" : "Article"}</Text>
           </View>
         </View>
 
@@ -216,7 +188,7 @@ export default function LibraryScreen({ navigation }: any) {
       style={styles.courseCard}
       onPress={() => navigation.navigate("CourseDetail", { courseId: course.id })}
     >
-      <Image source={{ uri: course.thumbnail }} style={styles.courseImage} />
+      <Image source={{ uri: course.thumbnail ?? images.appIcon }} style={styles.courseImage} />
 
       {course.isEnrolled && (
         <View style={styles.enrolledBadge}>
@@ -228,12 +200,12 @@ export default function LibraryScreen({ navigation }: any) {
         <Text style={styles.courseTitle} numberOfLines={2}>
           {course.title}
         </Text>
-        <Text style={styles.courseInstructor}>{t('common.by', { name: course.instructor })}</Text>
+        <Text style={styles.courseInstructor}>{t('common.by', { name: course.author })}</Text>
 
         <View style={styles.courseMeta}>
           <View style={styles.courseMetaItem}>
-            <Ionicons name="layers-outline" size={14} color="#666" />
-            <Text style={styles.courseMetaText}>{t('library.modules', { count: course.modulesCount })}</Text>
+            <Ionicons name="book-outline" size={14} color="#666" />
+            <Text style={styles.courseMetaText}>{course.booksCount} books</Text>
           </View>
           <View style={styles.courseMetaItem}>
             <Ionicons name="time-outline" size={14} color="#666" />
@@ -253,25 +225,6 @@ export default function LibraryScreen({ navigation }: any) {
             <Text style={styles.progressText}>{course.progress}%</Text>
           </View>
         )}
-      </View>
-    </TouchableOpacity>
-  )
-
-  const renderFeaturedLesson = ({ item: lesson }: { item: FeaturedLesson }) => (
-    <TouchableOpacity
-      style={styles.featuredLessonCard}
-      onPress={() => navigation.navigate("LessonDetail", { lessonId: lesson.id })}
-    >
-      <Image source={{ uri: lesson.thumbnail }} style={styles.featuredLessonImage} />
-      <View style={styles.featuredLessonInfo}>
-        <Text style={styles.featuredLessonTitle} numberOfLines={2}>
-          {lesson.title}
-        </Text>
-        <Text style={styles.featuredLessonCourse}>{lesson.courseName}</Text>
-        <View style={styles.featuredLessonMeta}>
-          <Ionicons name="time-outline" size={12} color="#666" />
-          <Text style={styles.featuredLessonDuration}>{formatDuration(lesson.duration)}</Text>
-        </View>
       </View>
     </TouchableOpacity>
   )
@@ -297,29 +250,13 @@ export default function LibraryScreen({ navigation }: any) {
         />
       </View>
 
-      {/* Featured Lessons */}
-      {/* {featuredLessons.length > 0 && (
-        <View style={styles.featuredSection}>
-          <Text style={styles.sectionTitle}>Bài học nổi bật</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuredList}
-          >
-            {featuredLessons.map((lesson) => (
-              <View key={lesson.id}>{renderFeaturedLesson({ item: lesson })}</View>
-            ))}
-          </ScrollView>
-        </View>
-      )} */}
-
       {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === "audiobooks" && styles.activeTab]}
-          onPress={() => setActiveTab("audiobooks")}
+          style={[styles.tab, activeTab === "books" && styles.activeTab]}
+          onPress={() => setActiveTab("books")}
         >
-          <Text style={[styles.tabText, activeTab === "audiobooks" && styles.activeTabText]}>{t('library.tab_audiobooks')}</Text>
+          <Text style={[styles.tabText, activeTab === "books" && styles.activeTabText]}>{t('library.tab_books')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === "courses" && styles.activeTab]}
@@ -332,7 +269,9 @@ export default function LibraryScreen({ navigation }: any) {
       {/* Content */}
       <FlatList
         data={getFilteredData() as any}
-        renderItem={activeTab === "audiobooks" ? renderAudioBook : (renderCourse as any)}
+        onRefresh={loadLibraryData}
+        refreshing={loading}
+        renderItem={activeTab === "books" ? renderBook : (renderCourse as any)}
         keyExtractor={(item) => item.id}
         numColumns={2}
         showsVerticalScrollIndicator={false}

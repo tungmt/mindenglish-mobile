@@ -43,6 +43,7 @@ interface AudioContextType {
   playTrack: (track: AudioTrack) => Promise<void>
   pauseTrack: () => Promise<void>
   resumeTrack: () => Promise<void>
+  stopTrack: () => Promise<void>
   seekTo: (position: number) => Promise<void>
   setPlaybackRate: (rate: number) => Promise<void>
   markAsCompleted: (trackId: string) => Promise<void>
@@ -133,7 +134,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       // Save current track and update play count
       await AsyncStorage.setItem("currentTrack", JSON.stringify(track))
-      await apiService.updateProgress({ lessonId: track.id, status: 'IN_PROGRESS', progress: 0, currentTime: 0 })
+      await apiService.updateProgress({ postId: track.id, status: 'IN_PROGRESS', progress: 0, currentTime: 0 })
 
       // Load comments for this track
       await loadComments(track.id)
@@ -153,7 +154,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (currentTrack) {
         const progress = duration > 0 ? position / duration : 0
         await apiService.updateProgress({
-          lessonId: currentTrack.id,
+          postId: currentTrack.id,
           status: 'IN_PROGRESS',
           progress: progress,
           currentTime: position,
@@ -169,6 +170,23 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const stopTrack = async () => {
+    try {
+      if (sound) {
+        await sound.stopAsync()
+        await sound.unloadAsync()
+        setSound(null)
+      }
+      setCurrentTrack(null)
+      setIsPlaying(false)
+      setPosition(0)
+      setDuration(0)
+      await AsyncStorage.removeItem("currentTrack")
+    } catch (error) {
+      console.error("Error stopping track:", error)
+    }
+  }
+
   const seekTo = async (newPosition: number) => {
     if (sound) {
       await sound.setPositionAsync(newPosition)
@@ -178,7 +196,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (currentTrack) {
         const progress = duration > 0 ? newPosition / duration : 0
         await apiService.updateProgress({
-          lessonId: currentTrack.id,
+          postId: currentTrack.id,
           status: 'IN_PROGRESS',
           progress: progress,
           currentTime: newPosition,
@@ -197,7 +215,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const markAsCompleted = async (trackId: string) => {
     try {
-      await apiService.updateProgress({ lessonId: trackId, status: 'COMPLETED', progress: 100 })
+      await apiService.updateProgress({ postId: trackId, status: 'COMPLETED', progress: 100 })
 
       // Update local state
       if (currentTrack && currentTrack.id === trackId) {
@@ -219,7 +237,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const markAsRepeat = async (trackId: string) => {
     try {
       // API call to mark for repeat - using notes as a workaround
-      // await apiService.createNote({ lessonId: trackId, content: 'Marked for repeat' })
+      // await apiService.createNote({ postId: trackId, content: 'Marked for repeat' })
 
       // Update local state
       if (currentTrack && currentTrack.id === trackId) {
@@ -250,7 +268,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         // Need to get favorite ID first - for now just toggle locally
         // await apiService.removeFavorite(favoriteId)
       } else {
-        await apiService.addFavorite({ itemId: trackId, itemType: 'LESSON' })
+        await apiService.addFavorite({ postId: trackId })
       }
 
       // Update local state
@@ -297,7 +315,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       // API call to get download URL and save file
       // Note: Download may need custom implementation
-      // await apiService.getLessonById(trackId)
+      // await apiService.getPostById(trackId)
     } catch (error) {
       console.error("Error downloading track:", error)
     }
@@ -305,8 +323,29 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const loadComments = async (trackId: string) => {
     try {
-      const commentsData = await apiService.getComments({ lessonId: trackId })
-      setComments(commentsData)
+      const commentsData = await apiService.getComments({ postId: trackId })
+      // Transform API comments to match local Comment interface
+      const transformedComments = commentsData.map((comment) => ({
+        id: comment.id,
+        userId: comment.userId,
+        userName: comment.user?.name || 'Unknown User',
+        userAvatar: comment.user?.avatar,
+        content: comment.content,
+        timestamp: new Date(comment.createdAt).getTime(),
+        likes: 0, // Not yet implemented in API
+        isLiked: false, // Not yet implemented in API
+        replies: comment.replies?.map((reply) => ({
+          id: reply.id,
+          userId: reply.userId,
+          userName: reply.user?.name || 'Unknown User',
+          userAvatar: reply.user?.avatar,
+          content: reply.content,
+          timestamp: new Date(reply.createdAt).getTime(),
+          likes: 0,
+          isLiked: false,
+        })),
+      }))
+      setComments(transformedComments)
     } catch (error) {
       console.error("Error loading comments:", error)
       // Mock comments for development
@@ -337,8 +376,19 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const addComment = async (trackId: string, content: string) => {
     try {
-      const newComment = await apiService.createComment({ lessonId: trackId, content })
-      setComments((prev) => [newComment, ...prev])
+      const newComment = await apiService.createComment({ postId: trackId, content })
+      // Transform API comment to match local Comment interface
+      const transformedComment: Comment = {
+        id: newComment.id,
+        userId: newComment.userId,
+        userName: newComment.user?.name || 'Unknown User',
+        userAvatar: newComment.user?.avatar,
+        content: newComment.content,
+        timestamp: new Date(newComment.createdAt).getTime(),
+        likes: 0,
+        isLiked: false,
+      }
+      setComments((prev) => [transformedComment, ...prev])
     } catch (error) {
       console.error("Error adding comment:", error)
     }
@@ -377,6 +427,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         playTrack,
         pauseTrack,
         resumeTrack,
+        stopTrack,
         seekTo,
         setPlaybackRate,
         markAsCompleted,

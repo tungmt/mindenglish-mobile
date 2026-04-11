@@ -21,79 +21,108 @@ export interface Course {
   title: string;
   description?: string;
   level?: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+  accessMode?: "SEQUENCE" | "PARALLEL";
   avatar?: string;
   coverImage?: string;
   price?: number;
+  isFree?: boolean;
   currency?: string;
   iapProductId?: string;
   isPurchased?: boolean;
   isPublished: boolean;
+  courseBooks?: CourseBook[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Lesson {
-  id: string;
-  title: string;
-  description?: string;
-  content?: string;
-  videoUrl?: string;
-  audioUrl?: string;
-  duration?: number;
-  avatar?: string;
-  coverImage?: string;
-  order: number;
-  courseId?: string;
-  moduleId?: string;
-  price?: number;
-  currency?: string;
-  iapProductId?: string;
-  isPurchased?: boolean;
-  isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Audiobook {
+export interface Book {
   id: string;
   title: string;
   description?: string;
   author?: string;
-  narrator?: string;
+  level?: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+  bookType: "AUDIO" | "ARTICLE";
+  accessMode?: "SEQUENCE" | "PARALLEL";
   avatar?: string;
   coverImage?: string;
+  price?: number;
+  isFree?: boolean;
+  currency?: string;
+  iapProductId?: string;
+  isPurchased?: boolean;
+  isPublished: boolean;
+  bookPosts?: BookPost[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Post {
+  id: string;
+  title: string;
+  description?: string;
+  postType: "AUDIO" | "ARTICLE";
+  level?: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+  content?: string;
   audioUrl?: string;
+  transcript?: string;
   duration?: number;
+  avatar?: string;
+  isFree?: boolean;
+  isPurchased?: boolean;
   isPublished: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CourseBook {
+  id: string;
+  courseId: string;
+  bookId: string;
+  order: number;
+  book?: Book;
+  course?: Course;
+}
+
+export interface BookPost {
+  id: string;
+  bookId: string;
+  postId: string;
+  order: number;
+  post?: Post;
+  book?: Book;
 }
 
 export interface Progress {
   id: string;
   userId: string;
-  lessonId: string;
+  courseId?: string;
+  bookId?: string;
+  postId?: string;
   status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
   progress: number;
   currentTime?: number;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  lesson?: Lesson;
+  post?: Post;
+  book?: Book;
+  course?: Course;
 }
 
 export interface Favorite {
   id: string;
   userId: string;
-  itemId: string;
-  itemType: "COURSE" | "LESSON" | "AUDIOBOOK";
+  courseId?: string;
+  bookId?: string;
+  postId?: string;
   createdAt: string;
 }
 
 export interface Comment {
   id: string;
   userId: string;
-  lessonId?: string;
+  postId?: string;
+  bookId?: string;
   courseId?: string;
   parentCommentId?: string;
   content: string;
@@ -107,12 +136,16 @@ export interface Comment {
 export interface Note {
   id: string;
   userId: string;
-  lessonId: string;
+  postId?: string;
+  bookId?: string;
+  courseId?: string;
   content: string;
   timestamp?: number;
   createdAt: string;
   updatedAt: string;
-  lesson?: Lesson;
+  post?: Post;
+  book?: Book;
+  course?: Course;
 }
 
 export interface Pagination {
@@ -133,13 +166,13 @@ export interface CoursesResponse {
   pagination: Pagination;
 }
 
-export interface LessonsResponse {
-  lessons: Lesson[];
+export interface BooksResponse {
+  books: Book[];
   pagination: Pagination;
 }
 
-export interface AudiobooksResponse {
-  audiobooks: Audiobook[];
+export interface PostsResponse {
+  posts: Post[];
   pagination: Pagination;
 }
 
@@ -168,19 +201,23 @@ export interface ChangePasswordRequest {
 }
 
 export interface CreateProgressRequest {
-  lessonId: string;
+  postId?: string;
+  bookId?: string;
+  courseId?: string;
   status?: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
   progress?: number;
   currentTime?: number;
 }
 
 export interface CreateFavoriteRequest {
-  itemId: string;
-  itemType: "COURSE" | "LESSON" | "AUDIOBOOK";
+  postId?: string;
+  bookId?: string;
+  courseId?: string;
 }
 
 export interface CreateCommentRequest {
-  lessonId?: string;
+  postId?: string;
+  bookId?: string;
   courseId?: string;
   parentCommentId?: string;
   content: string;
@@ -191,7 +228,9 @@ export interface UpdateCommentRequest {
 }
 
 export interface CreateNoteRequest {
-  lessonId: string;
+  postId?: string;
+  bookId?: string;
+  courseId?: string;
   content: string;
   timestamp?: number;
 }
@@ -205,19 +244,22 @@ export interface UpdateNoteRequest {
 export interface Purchase {
   id: string;
   userId: string;
-  itemId: string;
-  itemType: "COURSE" | "LESSON";
+  courseId?: string;
+  bookId?: string;
+  postId?: string;
   price: number;
   currency: string;
   transactionId: string;
   status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  source: "STRIPE" | "APPLE_IAP" | "GOOGLE_IAP";
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreatePurchaseRequest {
-  itemId: string;
-  itemType: "COURSE" | "LESSON";
+  courseId?: string;
+  bookId?: string;
+  postId?: string;
   transactionId: string;
   receiptData?: string;
 }
