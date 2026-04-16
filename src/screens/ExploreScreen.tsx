@@ -74,7 +74,7 @@ export default function ExploreScreen({ navigation }: any) {
       
       setCourses(coursesData)
     } catch (error) {
-      console.error("Error loading courses:", error)
+      console.log("Error loading courses:", error)
       // Initialize with empty array on error
       setCourses([])
     } finally {
@@ -106,7 +106,7 @@ export default function ExploreScreen({ navigation }: any) {
       await apiService.addFavorite({ courseId })
       setCourses((prev) => prev.map((course) => (course.id === courseId ? { ...course, isEnrolled: true } : course)))
     } catch (error) {
-      console.error("Error enrolling in course:", error)
+      console.log("Error enrolling in course:", error)
     }
   }
 

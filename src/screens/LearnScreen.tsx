@@ -128,7 +128,7 @@ export default function LearnScreen({ navigation }: any) {
       }
       setUserStats(stats)
     } catch (error) {
-      console.error("Error loading learning data:", error)
+      console.log("Error loading learning data:", error)
       // Initialize with empty data on error
       setUserCourses([])
       setUserStats({

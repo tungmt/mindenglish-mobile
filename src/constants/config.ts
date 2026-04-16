@@ -6,18 +6,8 @@
 
 // Automatically detect the appropriate base URL
 const getBaseURL = () => {
-  // If you're using a physical device, update this with your computer's IP address
-  // You can find your IP by running 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux)
-  const DEVELOPMENT_IP = "192.168.1.211" // Update this with your computer's local IP
-  const DEVELOPMENT_PORT = "3000"
-  
-  // For production, set this environment variable
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL
-  }
-  
-  // For development
-  return `http://${DEVELOPMENT_IP}:${DEVELOPMENT_PORT}`
+  // return `http://192.168.1.211:3000`
+  return `https://app.mindenglish.vn`
 }
 
 export const API_CONFIG = {
@@ -28,6 +18,8 @@ export const API_CONFIG = {
     USER_REGISTER: "/api/user/auth/register",
     SEND_VERIFICATION_CODE: "/api/auth/send-verification-code",
     RESET_PASSWORD: "/api/auth/reset-password",
+    VERIFY_EMAIL: "/api/auth/verify-email",
+    RESEND_VERIFICATION: "/api/auth/resend-verification",
     
     // User Profile
     USER_PROFILE: "/api/user/profile",

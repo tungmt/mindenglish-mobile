@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
+import { FontAwesome6, Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 import { useAudio } from "../context/AudioContext"
 import { apiService } from "../services/api"
+import images from "../constants/images"
 
 const { width } = Dimensions.get("window")
 
@@ -16,7 +17,7 @@ interface RecentAudio {
   courseName: string
   duration: number
   progress: number
-  thumbnail: string
+  thumbnail: string | null
 }
 
 interface TodayStats {
@@ -29,12 +30,12 @@ interface PopularAudio {
   id: string
   title: string
   listenerCount: number
-  thumbnail: string
+  thumbnail: string | null
 }
 
 export default function HomeScreen({ navigation }: any) {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const { currentTrack, playTrack } = useAudio()
   const [recentAudios, setRecentAudios] = useState<RecentAudio[]>([])
   const [todayStats, setTodayStats] = useState<TodayStats>({
@@ -83,10 +84,10 @@ export default function HomeScreen({ navigation }: any) {
               courseName: courseName,
               duration: (post.duration || 0) * 1000, // Convert to milliseconds
               progress: post.duration ? (progress.currentTime || 0) / post.duration : 0,
-              thumbnail: post.avatar || '/placeholder.svg',
+              thumbnail: post.avatar,
             }
           } catch (err) {
-            console.error('Error loading post:', err)
+            console.log('Error loading post:', err)
             return null
           }
         })
@@ -114,12 +115,31 @@ export default function HomeScreen({ navigation }: any) {
         id: course.id,
         title: course.title,
         listenerCount: course._count?.favorites || 0,
-        thumbnail: course.coverImage || course.avatar || '/placeholder.svg',
+        thumbnail: course.coverImage || course.avatar,
       }))
 
       setPopularAudios(popularAudiosData)
-    } catch (error) {
-      console.error("Error loading home data:", error)
+    } catch (error: any) {
+      console.log("Error loading home data:", error)
+      
+      // If unauthorized, token is invalid - logout user
+      if (error.message === "Unauthorized") {
+        console.log("Token is invalid, logging out user...")
+        const { Alert } = await import('react-native')
+        Alert.alert(
+          t('common.error'),
+          "Your session has expired. Please log in again.",
+          [
+            {
+              text: t('common.ok'),
+              onPress: async () => {
+                await logout()
+              }
+            }
+          ]
+        )
+      }
+      
       // Initialize with empty data on error
       setRecentAudios([])
       setTodayStats({ listeningTime: 0, completedLessons: 0, streak: 0 })
@@ -161,7 +181,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const renderRecentAudio = (audio: RecentAudio) => (
     <TouchableOpacity key={audio.id} style={styles.recentAudioCard}>
-      <Image source={{ uri: audio.thumbnail }} style={styles.recentAudioImage} />
+      <Image source={audio.thumbnail ? { uri: audio.thumbnail } : images.appIcon} style={styles.recentAudioImage} />
       <View style={styles.recentAudioInfo}>
         <Text style={styles.recentAudioTitle} numberOfLines={2}>
           {audio.title}
@@ -180,9 +200,10 @@ export default function HomeScreen({ navigation }: any) {
     </TouchableOpacity>
   )
 
+  console.log({popularAudios})
   const renderPopularAudio = (audio: PopularAudio) => (
     <TouchableOpacity key={audio.id} style={styles.popularAudioItem}>
-      <Image source={{ uri: audio.thumbnail }} style={styles.popularAudioImage} />
+      <Image source={audio.thumbnail ? { uri: audio.thumbnail } : images.appIcon} style={styles.popularAudioImage} />
       <View style={styles.popularAudioInfo}>
         <Text style={styles.popularAudioTitle} numberOfLines={1}>
           {audio.title}
@@ -195,8 +216,7 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Celebration Modal */}
-      {showCelebration && (
+      {false && showCelebration && (
         <View style={styles.celebrationOverlay}>
           <View style={styles.celebrationModal}>
             <Ionicons name="trophy" size={60} color="#FFD700" />
@@ -224,7 +244,9 @@ export default function HomeScreen({ navigation }: any) {
       {/* Continue Listening */}
       {currentTrack && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('home.continue_listening')}</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.continue_listening')}</Text>
+          </View>
           <TouchableOpacity style={styles.continueCard} onPress={() => navigation.navigate("AudioPlayer")}>
             <Image
               source={{
@@ -245,7 +267,12 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Today's Progress */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('home.today_progress')}</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('home.today_progress')}</Text>
+          <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => navigation.navigate("Progress")}>
+            <FontAwesome6 name="arrow-right" size={20} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Ionicons name="time-outline" size={24} color="#007AFF" />
@@ -271,8 +298,8 @@ export default function HomeScreen({ navigation }: any) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('home.recently_listened')}</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Library")}>
-                <Text style={styles.seeAllText}>{t('home.see_all')}</Text>
+              <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => navigation.navigate("Library")}>
+                <FontAwesome6 name="arrow-right" size={20} color="#007AFF" />
               </TouchableOpacity>
             </View>
             {recentAudios.map(renderRecentAudio)}
@@ -284,8 +311,8 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('home.popular_title')}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Community")}>
-            <Text style={styles.seeAllText}>{t('home.see_more')}</Text>
+          <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => navigation.navigate("Community")}>
+            <FontAwesome6 name="arrow-right" size={20} color="#007AFF" />
           </TouchableOpacity>
         </View>
         <View style={styles.popularContainer}>{popularAudios.map(renderPopularAudio)}</View>
@@ -293,7 +320,9 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('home.explore')}</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('home.explore')}</Text>
+        </View>
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.quickActionCard} onPress={() => navigation.navigate("Library")}>
             <Ionicons name="library-outline" size={32} color="#007AFF" />
@@ -402,20 +431,20 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 30,
+    gap: 8
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 15,
+    gap: 8,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#333",
-    paddingHorizontal: 20,
-    marginBottom: 15,
+    flex: 1
   },
   seeAllText: {
     color: "#007AFF",
@@ -423,9 +452,9 @@ const styles = StyleSheet.create({
   },
   continueCard: {
     backgroundColor: "#007AFF",
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -458,7 +487,7 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: "row",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   statCard: {
     flex: 1,
@@ -488,10 +517,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "white",
-    marginHorizontal: 20,
-    marginBottom: 10,
+    marginHorizontal: 16,
+    marginBottom: 8,
     borderRadius: 12,
-    padding: 15,
+    padding: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -586,13 +615,13 @@ const styles = StyleSheet.create({
   },
   quickActions: {
     flexDirection: "row",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   quickActionCard: {
     flex: 1,
     backgroundColor: "white",
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     alignItems: "center",
     marginHorizontal: 5,
     shadowColor: "#000",

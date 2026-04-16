@@ -63,7 +63,7 @@ export default function CommentSection({ lessonId, courseId }: CommentSectionPro
       
       setComments(topLevel)
     } catch (error) {
-      console.error("Error loading comments:", error)
+      console.log("Error loading comments:", error)
       Alert.alert("Error", "Failed to load comments")
     } finally {
       setLoading(false)
@@ -88,7 +88,7 @@ export default function CommentSection({ lessonId, courseId }: CommentSectionPro
       await loadComments()
       Alert.alert("Success", "Comment posted!")
     } catch (error: any) {
-      console.error("Error posting comment:", error)
+      console.log("Error posting comment:", error)
       Alert.alert("Error", error.message || "Failed to post comment")
     } finally {
       setSubmitting(false)
@@ -115,7 +115,7 @@ export default function CommentSection({ lessonId, courseId }: CommentSectionPro
       await loadComments()
       Alert.alert("Success", "Reply posted!")
     } catch (error: any) {
-      console.error("Error posting reply:", error)
+      console.log("Error posting reply:", error)
       Alert.alert("Error", error.message || "Failed to post reply")
     } finally {
       setSubmitting(false)
@@ -134,7 +134,7 @@ export default function CommentSection({ lessonId, courseId }: CommentSectionPro
             await loadComments()
             Alert.alert("Success", "Comment deleted")
           } catch (error: any) {
-            console.error("Error deleting comment:", error)
+            console.log("Error deleting comment:", error)
             Alert.alert("Error", error.message || "Failed to delete comment")
           }
         },

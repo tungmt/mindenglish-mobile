@@ -56,17 +56,22 @@ export default function RegisterScreen({ navigation }: any) {
     }
 
     setLoading(true)
-    const success = await register({
+    const result = await register({
       email: formData.email,
       name: formData.name,
       password: formData.password,
     })
     setLoading(false)
 
-    if (success) {
-      Alert.alert(t('common.success'), t('register.success'), [
-        { text: t('common.ok'), onPress: () => navigation.navigate("Auth") },
-      ])
+    if (result.success) {
+      if (result.needsVerification) {
+        // Navigate to verification screen
+        navigation.navigate("Verification", { email: formData.email })
+      } else {
+        Alert.alert(t('common.success'), t('register.success'), [
+          { text: t('common.ok'), onPress: () => navigation.navigate("Auth") },
+        ])
+      }
     } else {
       Alert.alert(t('common.error'), t('register.error_failed'))
     }

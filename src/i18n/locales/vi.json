@@ -313,5 +313,33 @@
     "success_profile": "Cập nhật hồ sơ thành công!",
     "success_password": "Đổi mật khẩu thành công!",
     "error_pick_image": "Không thể chọn ảnh"
+  },
+  "articleReader": {
+    "no_content": "Không có nội dung",
+    "error_loading": "Không thể tải bài viết. Vui lòng thử lại.",
+    "not_found": "Không tìm thấy bài viết",
+    "read_time": "{{minutes}} phút đọc",
+    "mark_completed": "Đánh dấu hoàn thành",
+    "marked_completed": "Đã đánh dấu bài viết hoàn thành!"
+  },
+  "verification": {
+    "title": "Xác thực Email",
+    "subtitle": "Chúng tôi đã gửi mã xác thực 4 chữ số đến",
+    "label": "Nhập mã xác thực",
+    "verifying": "Đang xác thực...",
+    "verify_email": "Xác thực Email",
+    "didnt_receive": "Chưa nhận được mã?",
+    "sending": "Đang gửi...",
+    "resend_code": "Gửi lại mã",
+    "resend_in": "Gửi lại sau {{countdown}}s",
+    "wrong_account": "Sai tài khoản?",
+    "sign_out": "Đăng xuất",
+    "sign_out_title": "Đăng xuất",
+    "sign_out_confirm": "Bạn có chắc chắn muốn đăng xuất? Bạn có thể đăng nhập bằng tài khoản khác.",
+    "error_enter_code": "Vui lòng nhập mã 4 chữ số",
+    "success": "Email đã được xác thực! Đang chuyển về trang chủ...",
+    "error_invalid": "Mã xác thực không hợp lệ hoặc đã hết hạn",
+    "success_resend": "Mã xác thực đã được gửi đến email của bạn",
+    "error_resend": "Không thể gửi lại mã xác thực"
   }
 }

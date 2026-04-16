@@ -101,7 +101,7 @@ export default function BookDetailScreen({ navigation, route }: any) {
         posts: posts,
       })
     } catch (error: any) {
-      console.error("Error loading book detail:", error)
+      console.log("Error loading book detail:", error)
       const { Alert } = await import('react-native')
       Alert.alert(
         t('common.error'), 
@@ -137,8 +137,10 @@ export default function BookDetailScreen({ navigation, route }: any) {
       navigation.navigate("AudioPlayer", { trackId: post.id })
     } else if (post.postType === "ARTICLE") {
       // Navigate to article reading screen
-      // navigation.navigate("ArticleReader", { postId: post.id })
-      alert(t('bookDetail.article_reading_coming_soon'))
+      navigation.navigate("ArticleReader", { 
+        postId: post.id,
+        bookId: book!.id
+      })
     }
   }
 

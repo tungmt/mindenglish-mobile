@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert, Switch, Modal } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert, Switch, Modal, Linking } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
@@ -51,7 +51,7 @@ export default function ProfileScreen({ navigation }: any) {
       }
       setProfileStats(stats)
     } catch (error) {
-      console.error("Error loading profile data:", error)
+      console.log("Error loading profile data:", error)
       // Initialize with empty stats on error
       setProfileStats({
         totalListeningTime: 0,
@@ -117,33 +117,35 @@ export default function ProfileScreen({ navigation }: any) {
       subtitle: t('profile.menu_support_sub'),
       onPress: () => navigation.navigate("Support"),
     },
-    {
-      icon: "document-text-outline",
-      title: t('profile.menu_privacy'),
-      subtitle: t('profile.menu_privacy_sub'),
-      onPress: () => { console.log("Open privacy policy") },
-    },
-    {
-      icon: "shield-checkmark-outline",
-      title: t('profile.menu_terms'),
-      subtitle: t('profile.menu_terms_sub'),
-      onPress: () => {
-        // Navigate to terms of service or open web view
-        console.log("Open terms of service")
-      },
-    },
-    {
-      icon: "star-outline",
-      title: t('profile.menu_rate'),
-      subtitle: t('profile.menu_rate_sub'),
-      onPress: () => { console.log("Open app store rating") },
-    },
-    {
-      icon: "share-outline",
-      title: t('profile.menu_share'),
-      subtitle: t('profile.menu_share_sub'),
-      onPress: () => { console.log("Share app") },
-    },
+    // {
+    //   icon: "document-text-outline",
+    //   title: t('profile.menu_privacy'),
+    //   subtitle: t('profile.menu_privacy_sub'),
+    //   onPress: () => { 
+    //     Linking.openURL("https://mindenglish.vn/privacy-policy")
+    //    },
+    // },
+    // {
+    //   icon: "shield-checkmark-outline",
+    //   title: t('profile.menu_terms'),
+    //   subtitle: t('profile.menu_terms_sub'),
+    //   onPress: () => {
+    //     // Navigate to terms of service or open web view
+    //     console.log("Open terms of service")
+    //   },
+    // },
+    // {
+    //   icon: "star-outline",
+    //   title: t('profile.menu_rate'),
+    //   subtitle: t('profile.menu_rate_sub'),
+    //   onPress: () => { console.log("Open app store rating") },
+    // },
+    // {
+    //   icon: "share-outline",
+    //   title: t('profile.menu_share'),
+    //   subtitle: t('profile.menu_share_sub'),
+    //   onPress: () => { console.log("Share app") },
+    // },
   ]
 
   return (
@@ -207,10 +209,10 @@ export default function ProfileScreen({ navigation }: any) {
 
       {/* Quick Settings */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('profile.quick_settings')}</Text>
+        {/* <Text style={styles.sectionTitle}>{t('profile.quick_settings')}</Text> */}
         
         {/* Notifications Toggle */}
-        <View style={styles.settingItem}>
+        {/* <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
             <Ionicons name="notifications-outline" size={20} color="#666" />
             <View style={styles.settingText}>
@@ -224,7 +226,7 @@ export default function ProfileScreen({ navigation }: any) {
             trackColor={{ false: "#e0e0e0", true: "#007AFF" }}
             thumbColor={notificationsEnabled ? "white" : "#f4f3f4"}
           />
-        </View>
+        </View> */}
 
         {/* Language Picker */}
         <TouchableOpacity 

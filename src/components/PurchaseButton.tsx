@@ -43,6 +43,11 @@ export default function PurchaseButton({
       return
     }
 
+    if (!revenueCatService.isAvailable()) {
+      Alert.alert("Not Available", "In-app purchases are not available on this device.")
+      return
+    }
+
     if (!iapProductId) {
       Alert.alert("Error", "This item is not available for purchase.")
       return
@@ -71,7 +76,7 @@ export default function PurchaseButton({
                 onPurchaseSuccess?.()
               }
             } catch (error: any) {
-              console.error("Purchase error:", error)
+              console.log("Purchase error:", error)
               Alert.alert("Purchase Failed", error.message || "Unable to complete purchase. Please try again.")
             } finally {
               setLoading(false)

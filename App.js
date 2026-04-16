@@ -11,9 +11,11 @@ import { View } from "react-native"
 import SplashScreen from "./src/screens/SplashScreen"
 import AuthScreen from "./src/screens/AuthScreen"
 import RegisterScreen from "./src/screens/RegisterScreen"
+import VerificationScreen from "./src/screens/VerificationScreen"
 import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen"
 import ProfileScreen from "./src/screens/ProfileScreen"
 import AudioPlayerScreen from "./src/screens/AudioPlayerScreen"
+import ArticleReaderScreen from "./src/screens/ArticleReaderScreen"
 import CourseDetailScreen from "./src/screens/CourseDetailScreen"
 import SettingsScreen from "./src/screens/SettingsScreen"
 import SupportScreen from "./src/screens/SupportScreen"
@@ -21,6 +23,7 @@ import HomeScreen from "./src/screens/HomeScreen"
 import LibraryScreen from "./src/screens/LibraryScreen"
 import BookDetailScreen from "./src/screens/BookDetailScreen"
 import CommunityScreen from "./src/screens/CommunityScreen"
+import ProgressScreen from "./src/screens/ProgressScreen"
 import FloatingAudioPlayer from "./src/components/FloatingAudioPlayer"
 
 // Context
@@ -50,13 +53,14 @@ function AuthNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Auth" component={AuthScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Verification" component={VerificationScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   )
 }
 
 function AppNavigator({ navigationRef, currentRouteName }) {
-  const { user, loading } = useAuth()
+  const { user, loading, needsVerification } = useAuth()
   const [showSplash, setShowSplash] = useState(true)
 
   useEffect(() => {
@@ -76,28 +80,40 @@ function AppNavigator({ navigationRef, currentRouteName }) {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
           <>
-            <Stack.Screen name="Main" component={TabNavigator} />
-            <Stack.Screen
-              name="AudioPlayer"
-              component={AudioPlayerScreen}
-              options={{
-                presentation: "modal",
-                // gestureEnabled: true,
-                // cardOverlayEnabled: true,
-              }}
-            />
-            <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
-            <Stack.Screen name="BookDetail" component={BookDetailScreen} />
-            <Stack.Screen name="Community" component={CommunityScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="Support" component={SupportScreen} />
+            {needsVerification ? (
+              <Stack.Screen 
+                name="Verification" 
+                component={VerificationScreen}
+                initialParams={{ email: user.email }}
+              />
+            ) : (
+              <>
+                <Stack.Screen name="Main" component={TabNavigator} />
+                <Stack.Screen
+                  name="AudioPlayer"
+                  component={AudioPlayerScreen}
+                  options={{
+                    presentation: "modal",
+                    // gestureEnabled: true,
+                    // cardOverlayEnabled: true,
+                  }}
+                />
+                <Stack.Screen name="ArticleReader" component={ArticleReaderScreen} />
+                <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+                <Stack.Screen name="BookDetail" component={BookDetailScreen} />
+                <Stack.Screen name="Community" component={CommunityScreen} />
+                <Stack.Screen name="Progress" component={ProgressScreen} />
+                <Stack.Screen name="Settings" component={SettingsScreen} />
+                <Stack.Screen name="Support" component={SupportScreen} />
+              </>
+            )}
           </>
         ) : (
           <Stack.Screen name="AuthFlow" component={AuthNavigator} />
         )}
       </Stack.Navigator>
 
-      {user && (
+      {user && !needsVerification && (
         <FloatingAudioPlayer
           onPress={() => {
             navigationRef.current?.navigate("AudioPlayer")

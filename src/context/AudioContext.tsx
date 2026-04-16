@@ -92,7 +92,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setPlaybackRateState(Number.parseFloat(savedRate))
       }
     } catch (error) {
-      console.error("Error loading playback rate:", error)
+      console.log("Error loading playback rate:", error)
     }
   }
 
@@ -139,7 +139,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       // Load comments for this track
       await loadComments(track.id)
     } catch (error) {
-      console.error("Error playing track:", error)
+      console.log("Error playing track:", error)
     } finally {
       setIsLoading(false)
     }
@@ -183,7 +183,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setDuration(0)
       await AsyncStorage.removeItem("currentTrack")
     } catch (error) {
-      console.error("Error stopping track:", error)
+      console.log("Error stopping track:", error)
     }
   }
 
@@ -230,7 +230,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         await AsyncStorage.setItem("completedTracks", JSON.stringify(completed))
       }
     } catch (error) {
-      console.error("Error marking track as completed:", error)
+      console.log("Error marking track as completed:", error)
     }
   }
 
@@ -257,7 +257,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       await AsyncStorage.setItem("repeatTracks", JSON.stringify(repeats))
     } catch (error) {
-      console.error("Error marking track for repeat:", error)
+      console.log("Error marking track for repeat:", error)
     }
   }
 
@@ -289,7 +289,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       await AsyncStorage.setItem("favoriteTracks", JSON.stringify(favorites))
     } catch (error) {
-      console.error("Error toggling favorite:", error)
+      console.log("Error toggling favorite:", error)
     }
   }
 
@@ -317,7 +317,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       // Note: Download may need custom implementation
       // await apiService.getPostById(trackId)
     } catch (error) {
-      console.error("Error downloading track:", error)
+      console.log("Error downloading track:", error)
     }
   }
 
@@ -347,7 +347,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }))
       setComments(transformedComments)
     } catch (error) {
-      console.error("Error loading comments:", error)
+      console.log("Error loading comments:", error)
       // Mock comments for development
       setComments([
         {
@@ -390,7 +390,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
       setComments((prev) => [transformedComment, ...prev])
     } catch (error) {
-      console.error("Error adding comment:", error)
+      console.log("Error adding comment:", error)
     }
   }
 
@@ -410,7 +410,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         ),
       )
     } catch (error) {
-      console.error("Error liking comment:", error)
+      console.log("Error liking comment:", error)
     }
   }
 

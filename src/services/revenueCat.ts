@@ -1,10 +1,21 @@
-import Purchases, { 
-  CustomerInfo, 
-  PurchasesPackage, 
-  PurchasesOffering 
-} from 'react-native-purchases';
 import { Platform } from 'react-native';
 import { apiService } from './api';
+
+// Safely import Purchases - it may not be available if not properly linked
+let Purchases: any = null;
+let CustomerInfo: any = null;
+let PurchasesPackage: any = null;
+let PurchasesOffering: any = null;
+
+try {
+  const PurchasesModule = require('react-native-purchases');
+  Purchases = PurchasesModule.default || PurchasesModule.Purchases;
+  CustomerInfo = PurchasesModule.CustomerInfo;
+  PurchasesPackage = PurchasesModule.PurchasesPackage;
+  PurchasesOffering = PurchasesModule.PurchasesOffering;
+} catch (error) {
+  console.log('RevenueCat module not available - purchases will be disabled:', error);
+}
 
 // RevenueCat API Keys (replace with your actual keys)
 const REVENUECAT_API_KEY = Platform.select({
@@ -14,8 +25,22 @@ const REVENUECAT_API_KEY = Platform.select({
 
 class RevenueCatService {
   private initialized = false;
+  private available = false;
+
+  constructor() {
+    this.available = Purchases !== null;
+  }
+
+  isAvailable(): boolean {
+    return this.available;
+  }
 
   async initialize(userId: string) {
+    if (!this.available) {
+      console.log('RevenueCat module not available - skipping initialization');
+      return;
+    }
+
     if (this.initialized) return;
 
     try {
@@ -23,22 +48,31 @@ class RevenueCatService {
       this.initialized = true;
       console.log('RevenueCat initialized successfully');
     } catch (error) {
-      console.error('Error initializing RevenueCat:', error);
+      console.log('Error initializing RevenueCat:', error);
       throw error;
     }
   }
 
-  async getOfferings(): Promise<PurchasesOffering | null> {
+  async getOfferings(): Promise<any | null> {
+    if (!this.available) {
+      console.log('RevenueCat not available');
+      return null;
+    }
+
     try {
       const offerings = await Purchases.getOfferings();
       return offerings.current;
     } catch (error) {
-      console.error('Error getting offerings:', error);
+      console.log('Error getting offerings:', error);
       return null;
     }
   }
 
-  async purchasePackage(packageToPurchase: PurchasesPackage): Promise<CustomerInfo | null> {
+  async purchasePackage(packageToPurchase: any): Promise<any | null> {
+    if (!this.available) {
+      throw new Error('Purchases are not available on this device');
+    }
+
     try {
       const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
       return customerInfo;
@@ -47,12 +81,16 @@ class RevenueCatService {
         console.log('User cancelled purchase');
         return null;
       }
-      console.error('Error making purchase:', error);
+      console.log('Error making purchase:', error);
       throw error;
     }
   }
 
   async purchaseCourse(courseId: string, iapProductId: string): Promise<boolean> {
+    if (!this.available) {
+      throw new Error('Purchases are not available on this device');
+    }
+
     try {
       // Get the offering/package for this product
       const offerings = await this.getOfferings();
@@ -62,7 +100,7 @@ class RevenueCatService {
 
       // Find the package matching the product ID
       const packages = offerings.availablePackages;
-      const packageToPurchase = packages.find(pkg => pkg.product.identifier === iapProductId);
+      const packageToPurchase = packages.find((pkg: any) => pkg.product.identifier === iapProductId);
 
       if (!packageToPurchase) {
         throw new Error(`Package not found for product ID: ${iapProductId}`);
@@ -75,22 +113,25 @@ class RevenueCatService {
         // Verify with backend
         const transactionId = customerInfo.originalPurchaseDate || Date.now().toString();
         await apiService.createPurchase({
-          itemId: courseId,
-          itemType: 'COURSE',
+          courseId,
           transactionId,
-        });
+        } as any);
         
         return true;
       }
       
       return false;
     } catch (error) {
-      console.error('Error purchasing course:', error);
+      console.log('Error purchasing course:', error);
       throw error;
     }
   }
 
   async purchaseLesson(lessonId: string, iapProductId: string): Promise<boolean> {
+    if (!this.available) {
+      throw new Error('Purchases are not available on this device');
+    }
+
     try {
       const offerings = await this.getOfferings();
       if (!offerings) {
@@ -98,7 +139,7 @@ class RevenueCatService {
       }
 
       const packages = offerings.availablePackages;
-      const packageToPurchase = packages.find(pkg => pkg.product.identifier === iapProductId);
+      const packageToPurchase = packages.find((pkg: any) => pkg.product.identifier === iapProductId);
 
       if (!packageToPurchase) {
         throw new Error(`Package not found for product ID: ${iapProductId}`);
@@ -109,58 +150,73 @@ class RevenueCatService {
       if (customerInfo) {
         const transactionId = customerInfo.originalPurchaseDate || Date.now().toString();
         await apiService.createPurchase({
-          itemId: lessonId,
-          itemType: 'LESSON',
+          postId: lessonId,
           transactionId,
-        });
+        } as any);
         
         return true;
       }
       
       return false;
     } catch (error) {
-      console.error('Error purchasing lesson:', error);
+      console.log('Error purchasing lesson:', error);
       throw error;
     }
   }
 
-  async restorePurchases(): Promise<CustomerInfo> {
+  async restorePurchases(): Promise<any> {
+    if (!this.available) {
+      throw new Error('Purchases are not available on this device');
+    }
+
     try {
       const customerInfo = await Purchases.restorePurchases();
       return customerInfo;
     } catch (error) {
-      console.error('Error restoring purchases:', error);
+      console.log('Error restoring purchases:', error);
       throw error;
     }
   }
 
-  async getCustomerInfo(): Promise<CustomerInfo> {
+  async getCustomerInfo(): Promise<any> {
+    if (!this.available) {
+      throw new Error('Purchases are not available on this device');
+    }
+
     try {
       const customerInfo = await Purchases.getCustomerInfo();
       return customerInfo;
     } catch (error) {
-      console.error('Error getting customer info:', error);
+      console.log('Error getting customer info:', error);
       throw error;
     }
   }
 
   async checkPurchaseStatus(productId: string): Promise<boolean> {
+    if (!this.available) {
+      return false;
+    }
+
     try {
       const customerInfo = await this.getCustomerInfo();
       const entitlements = customerInfo.entitlements.active;
       return Object.keys(entitlements).length > 0;
     } catch (error) {
-      console.error('Error checking purchase status:', error);
+      console.log('Error checking purchase status:', error);
       return false;
     }
   }
 
   async logout() {
+    if (!this.available) {
+      return;
+    }
+
     try {
       await Purchases.logOut();
       this.initialized = false;
     } catch (error) {
-      console.error('Error logging out from RevenueCat:', error);
+      console.log('Error logging out from RevenueCat:', error);
     }
   }
 }

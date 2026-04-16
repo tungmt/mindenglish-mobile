@@ -65,7 +65,7 @@ export default function ProfileEditScreen({ navigation }: any) {
         await uploadAvatar(result.assets[0])
       }
     } catch (error) {
-      console.error("Error picking image:", error)
+      console.log("Error picking image:", error)
       Alert.alert(t('common.error'), t('profileEdit.error_pick_image'))
     }
   }
@@ -85,7 +85,7 @@ export default function ProfileEditScreen({ navigation }: any) {
       
       Alert.alert(t('common.success'), t('profileEdit.success_profile') + ' Avatar uploaded')
     } catch (error: any) {
-      console.error("Error uploading avatar:", error)
+      console.log("Error uploading avatar:", error)
       Alert.alert("Error", error.message || "Failed to upload avatar")
     } finally {
       setUploadingAvatar(false)
@@ -113,7 +113,7 @@ export default function ProfileEditScreen({ navigation }: any) {
         Alert.alert(t('common.error'), t('common.error'))
       }
     } catch (error: any) {
-      console.error("Error updating profile:", error)
+      console.log("Error updating profile:", error)
       Alert.alert("Error", error.message || "Failed to update profile")
     } finally {
       setLoading(false)
@@ -152,7 +152,7 @@ export default function ProfileEditScreen({ navigation }: any) {
         })
       }
     } catch (error: any) {
-      console.error("Error changing password:", error)
+      console.log("Error changing password:", error)
       Alert.alert("Error", error.message || "Failed to change password")
     } finally {
       setLoading(false)

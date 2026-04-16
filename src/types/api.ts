@@ -7,6 +7,7 @@ export interface User {
   avatar?: string;
   role: "USER" | "ADMIN" | "SUPER_ADMIN";
   isActive: boolean;
+  isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }

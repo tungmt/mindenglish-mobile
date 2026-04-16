@@ -77,7 +77,7 @@ export default function SettingsScreen({ navigation }: any) {
         </View>
 
         {/* Notification Settings */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>
 
           <View style={styles.settingRow}>
@@ -87,10 +87,10 @@ export default function SettingsScreen({ navigation }: any) {
             </View>
             <Switch value={settings.notifications} onValueChange={(value) => updateSetting("notifications", value)} />
           </View>
-        </View>
+        </View> */}
 
         {/* App Settings */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.app_settings')}</Text>
 
           <View style={styles.settingRow}>
@@ -100,7 +100,7 @@ export default function SettingsScreen({ navigation }: any) {
             </View>
             <Switch value={settings.darkMode} onValueChange={(value) => updateSetting("darkMode", value)} />
           </View>
-        </View>
+        </View> */}
       </ScrollView>
     </View>
   )

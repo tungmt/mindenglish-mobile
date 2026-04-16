@@ -22,7 +22,7 @@ interface Book {
   id: string
   title: string
   author: string
-  thumbnail: string
+  thumbnail: string | null
   postsCount: number
   totalDuration: number
   level: string
@@ -35,7 +35,7 @@ interface Course {
   id: string
   title: string
   author: string
-  thumbnail: string
+  thumbnail: string | null
   booksCount: number
   totalDuration: number
   level: string
@@ -45,7 +45,7 @@ interface Course {
 
 export default function LibraryScreen({ navigation }: any) {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<"books" | "courses">("books")
+  const [activeTab, setActiveTab] = useState<"books" | "courses">("courses")
   const [searchQuery, setSearchQuery] = useState("")
   const [books, setBooks] = useState<Book[]>([])
   const [courses, setCourses] = useState<Course[]>([])
@@ -77,7 +77,7 @@ export default function LibraryScreen({ navigation }: any) {
       setLoading(true)
       // Import the API service
       const { apiService } = await import("../services/api")
-      
+
       // Load books and courses from API
       const [booksResponse, coursesResponse] = await Promise.all([
         apiService.getBooks({ page: 1, limit: 50 }),
@@ -91,7 +91,7 @@ export default function LibraryScreen({ navigation }: any) {
         id: book.id,
         title: book.title,
         author: book.author || "Unknown Author",
-        thumbnail: book.coverImage || book.avatar || images.appIcon,
+        thumbnail: book.coverImage || book.avatar,
         postsCount: book._count?.bookPosts || 0,
         totalDuration: 0, // TODO: Calculate from posts
         level: book.level || "BEGINNER",
@@ -99,7 +99,7 @@ export default function LibraryScreen({ navigation }: any) {
         isDownloaded: false, // TODO: Track downloads locally
         progress: 0, // TODO: Calculate from user progress
       }))
-      
+
       setBooks(booksData)
 
       // Transform courses data
@@ -107,17 +107,17 @@ export default function LibraryScreen({ navigation }: any) {
         id: course.id,
         title: course.title,
         author: course.author ?? '', // TODO: Add author field to course model
-        thumbnail: course.coverImage || images.appIcon,
+        thumbnail: course.coverImage,
         booksCount: course._count?.courseBooks || 0,
         totalDuration: 0, // TODO: Calculate from posts
         level: course.level || "BEGINNER",
         isEnrolled: course.isPublished, // TODO: Track user enrollment
         progress: 0, // TODO: Calculate from user progress
       }))
-      
+
       setCourses(coursesData)
     } catch (error) {
-      console.error("Error loading library data:", error)
+      console.log("Error loading library data:", error)
       // Initialize with empty data on error
       setBooks([])
       setCourses([])
@@ -140,7 +140,7 @@ export default function LibraryScreen({ navigation }: any) {
       style={styles.bookCard}
       onPress={() => navigation.navigate("BookDetail", { bookId: book.id })}
     >
-      <Image source={{ uri: book.thumbnail ?? images.appIcon }} style={styles.bookCover} />
+      <Image source={book.thumbnail ? { uri: book.thumbnail } : images.appIcon} style={styles.bookCover} />
       <View style={styles.bookInfo}>
         <Text style={styles.bookTitle} numberOfLines={2}>
           {book.title}
@@ -188,7 +188,7 @@ export default function LibraryScreen({ navigation }: any) {
       style={styles.courseCard}
       onPress={() => navigation.navigate("CourseDetail", { courseId: course.id })}
     >
-      <Image source={{ uri: course.thumbnail ?? images.appIcon }} style={styles.courseImage} />
+      <Image source={course?.thumbnail ? { uri: course.thumbnail } : images.appIcon} style={styles.courseImage} />
 
       {course.isEnrolled && (
         <View style={styles.enrolledBadge}>
@@ -253,16 +253,16 @@ export default function LibraryScreen({ navigation }: any) {
       {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === "books" && styles.activeTab]}
-          onPress={() => setActiveTab("books")}
-        >
-          <Text style={[styles.tabText, activeTab === "books" && styles.activeTabText]}>{t('library.tab_books')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[styles.tab, activeTab === "courses" && styles.activeTab]}
           onPress={() => setActiveTab("courses")}
         >
           <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText]}>{t('library.tab_courses')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "books" && styles.activeTab]}
+          onPress={() => setActiveTab("books")}
+        >
+          <Text style={[styles.tabText, activeTab === "books" && styles.activeTabText]}>{t('library.tab_books')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -277,6 +277,7 @@ export default function LibraryScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentList}
         columnWrapperStyle={styles.row}
+        style={{flex: 1, width: "100%"}}
       />
     </View>
   )

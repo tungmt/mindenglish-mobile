@@ -54,7 +54,9 @@ class ApiService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Network error" }))
-      throw new Error(error.message || `HTTP ${response.status}`)
+      // Handle both { error: "..." } and { message: "..." } formats
+      const errorMessage = error.error || error.message || `HTTP ${response.status}`
+      throw new Error(errorMessage)
     }
 
     return response.json()
@@ -86,6 +88,20 @@ class ApiService {
     return this.makeRequest<{ success: boolean; message: string }>(API_CONFIG.ENDPOINTS.RESET_PASSWORD, {
       method: "POST",
       body: JSON.stringify(data),
+    })
+  }
+
+  async verifyEmail(data: { email: string; code: string }): Promise<{ success: boolean; message: string }> {
+    return this.makeRequest<{ success: boolean; message: string }>(API_CONFIG.ENDPOINTS.VERIFY_EMAIL, {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async resendVerification(email: string): Promise<{ success: boolean; message: string }> {
+    return this.makeRequest<{ success: boolean; message: string }>(API_CONFIG.ENDPOINTS.RESEND_VERIFICATION, {
+      method: "POST",
+      body: JSON.stringify({ email }),
     })
   }
 

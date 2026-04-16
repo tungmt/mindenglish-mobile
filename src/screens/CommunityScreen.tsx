@@ -59,7 +59,7 @@ export default function CommunityScreen({ navigation }: any) {
       setPopularAudios([])
       setCommunityStats(null)
     } catch (error) {
-      console.error("Error loading community data:", error)
+      console.log("Error loading community data:", error)
       setLeaderboard([])
       setPopularAudios([])
       setCommunityStats(null)

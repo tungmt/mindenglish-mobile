@@ -129,7 +129,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
         books: books,
       })
     } catch (error) {
-      console.error("Error loading course detail:", error)
+      console.log("Error loading course detail:", error)
       Alert.alert(t('common.error'), t('courseDetail.error_loading'))
       setCourse(null)
     } finally {

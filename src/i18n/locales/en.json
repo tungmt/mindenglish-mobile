@@ -313,5 +313,33 @@
     "success_profile": "Profile updated successfully!",
     "success_password": "Password changed successfully!",
     "error_pick_image": "Failed to pick image"
+  },
+  "articleReader": {
+    "no_content": "No content available",
+    "error_loading": "Failed to load article. Please try again.",
+    "not_found": "Article not found",
+    "read_time": "{{minutes}} min read",
+    "mark_completed": "Mark as Completed",
+    "marked_completed": "Article marked as completed!"
+  },
+  "verification": {
+    "title": "Verify Your Email",
+    "subtitle": "We've sent a 4-digit verification code to",
+    "label": "Enter Verification Code",
+    "verifying": "Verifying...",
+    "verify_email": "Verify Email",
+    "didnt_receive": "Didn't receive the code?",
+    "sending": "Sending...",
+    "resend_code": "Resend Code",
+    "resend_in": "Resend in {{countdown}}s",
+    "wrong_account": "Wrong account?",
+    "sign_out": "Sign Out",
+    "sign_out_title": "Sign Out",
+    "sign_out_confirm": "Are you sure you want to sign out? You can login with a different account.",
+    "error_enter_code": "Please enter the 4-digit code",
+    "success": "Email verified successfully! Redirecting to home...",
+    "error_invalid": "Invalid or expired verification code",
+    "success_resend": "Verification code sent to your email",
+    "error_resend": "Failed to resend verification code"
   }
 }
