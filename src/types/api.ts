@@ -29,6 +29,8 @@ export interface Course {
   isFree?: boolean;
   currency?: string;
   iapProductId?: string;
+  iapProductIdAndroid?: string;
+  iapProductIdIos?: string;
   isPurchased?: boolean;
   isPublished: boolean;
   courseBooks?: CourseBook[];
@@ -50,6 +52,8 @@ export interface Book {
   isFree?: boolean;
   currency?: string;
   iapProductId?: string;
+  iapProductIdAndroid?: string;
+  iapProductIdIos?: string;
   isPurchased?: boolean;
   isPublished: boolean;
   bookPosts?: BookPost[];

@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { apiService } from "../services/api"
+import { HTMLContent } from "../components/HTMLContent"
 
 const { width } = Dimensions.get("window")
 
@@ -170,14 +171,10 @@ export default function ArticleReaderScreen({ navigation, route }: ArticleReader
         <Text style={[styles.title, { fontSize: fontSize + 8 }]}>{post.title}</Text>
         
         {post.description && (
-          <Text style={[styles.description, { fontSize: fontSize }]}>
-            {post.description}
-          </Text>
+          <HTMLContent content={post.description} fontSize={fontSize} />
         )}
 
-        <Text style={[styles.articleContent, { fontSize }]}>
-          {post.content}
-        </Text>
+        <HTMLContent content={post.content} fontSize={fontSize} />
 
         {/* Mark as Completed Button */}
         <TouchableOpacity 

@@ -1,9 +1,10 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { Audio } from "expo-av"
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react"
+import TrackPlayer, { State, Event, Track, usePlaybackState, useProgress } from "react-native-track-player"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { apiService } from "../services/api"
+import { setupPlayer } from "../services/trackPlayerService"
 
 interface AudioTrack {
   id: string
@@ -40,7 +41,12 @@ interface AudioContextType {
   playbackRate: number
   isLoading: boolean
   comments: Comment[]
+  playlist: AudioTrack[]
+  currentIndex: number
   playTrack: (track: AudioTrack) => Promise<void>
+  playPlaylist: (tracks: AudioTrack[], startIndex?: number) => Promise<void>
+  playNext: () => Promise<void>
+  playPrevious: () => Promise<void>
   pauseTrack: () => Promise<void>
   resumeTrack: () => Promise<void>
   stopTrack: () => Promise<void>
@@ -58,32 +64,105 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | undefined>(undefined)
 
 export function AudioProvider({ children }: { children: ReactNode }) {
-  const [sound, setSound] = useState<Audio.Sound | null>(null)
   const [currentTrack, setCurrentTrack] = useState<AudioTrack | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [position, setPosition] = useState(0)
-  const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRateState] = useState(1.0)
   const [isLoading, setIsLoading] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
+  const [playlist, setPlaylist] = useState<AudioTrack[]>([])
+  const [currentIndex, setCurrentIndex] = useState(-1)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [position, setPosition] = useState(0)
+  const [duration, setDuration] = useState(0)
+  
+  // Use refs to avoid closure issues in playback callbacks
+  const playlistRef = useRef<AudioTrack[]>([])
+  const currentIndexRef = useRef(-1)
+  const isInitialized = useRef(false)
 
+  // Setup TrackPlayer on mount
   useEffect(() => {
-    // Configure audio settings
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-      shouldDuckAndroid: true,
-    })
+    const initPlayer = async () => {
+      if (isInitialized.current) return
+      
+      try {
+        await setupPlayer()
+        isInitialized.current = true
+        await loadSavedPlaybackRate()
+        
+        // Set up event listeners
+        const playbackStateListener = TrackPlayer.addEventListener(Event.PlaybackState, async (state) => {
+          const playerState = state.state
+          setIsPlaying(playerState === State.Playing)
+        })
+
+        const trackChangedListener = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async (data) => {
+          if (data.track != null) {
+            const queue = await TrackPlayer.getQueue()
+            const trackIndex = queue.findIndex((t) => t.id === data.track?.id)
+            if (trackIndex !== -1) {
+              setCurrentIndex(trackIndex)
+              currentIndexRef.current = trackIndex
+              
+              // Update currentTrack from playlist
+              const currentPlaylist = playlistRef.current
+              if (currentPlaylist.length > 0 && trackIndex < currentPlaylist.length) {
+                const track = currentPlaylist[trackIndex]
+                setCurrentTrack(track)
+                console.log(`🎵 Track changed to: ${track.title} [${trackIndex + 1}/${currentPlaylist.length}]`)
+                
+                // Load comments for new track
+                await loadComments(track.id)
+                
+                // Update progress tracking
+                await AsyncStorage.setItem("currentTrack", JSON.stringify(track))
+                await apiService.updateProgress({ postId: track.id, status: 'IN_PROGRESS', progress: 0, currentTime: 0 })
+              }
+            }
+          }
+        })
+
+        const progressListener = TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, async (progress) => {
+          setPosition(progress.position * 1000) // Convert to ms
+          setDuration(progress.duration * 1000) // Convert to ms
+          
+          // Auto-mark as completed when 90% finished
+          const currentQueue = await TrackPlayer.getQueue()
+          const currentTrackIndex = await TrackPlayer.getActiveTrackIndex()
+          if (currentTrackIndex !== undefined && currentQueue[currentTrackIndex]) {
+            const track = currentQueue[currentTrackIndex]
+            const progressPercent = progress.duration > 0 ? progress.position / progress.duration : 0
+            if (progressPercent >= 0.9 && track.id) {
+              markAsCompleted(track.id)
+            }
+          }
+        })
+
+        const queueEndedListener = TrackPlayer.addEventListener(Event.PlaybackQueueEnded, async () => {
+          console.log("📻 Playlist finished - all tracks completed")
+          // Queue has ended, no more tracks to play
+        })
+
+        console.log('✅ TrackPlayer initialized for background playback')
+      } catch (error) {
+        console.error('❌ Error initializing TrackPlayer:', error)
+      }
+    }
     
-    loadSavedPlaybackRate()
+    initPlayer()
     
-    return sound
-      ? () => {
-          sound.unloadAsync()
-        }
-      : undefined
-  }, [sound])
+    return () => {
+      TrackPlayer.reset()
+    }
+  }, [])
+  
+  // Sync refs with state
+  useEffect(() => {
+    playlistRef.current = playlist
+  }, [playlist])
+  
+  useEffect(() => {
+    currentIndexRef.current = currentIndex
+  }, [currentIndex])
 
   const loadSavedPlaybackRate = async () => {
     try {
@@ -96,41 +175,141 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const playPlaylist = async (tracks: AudioTrack[], startIndex: number = 0) => {
+    if (tracks.length === 0) {
+      console.log('⚠️ Cannot play empty playlist')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      console.log(`🎵 Playing playlist with ${tracks.length} tracks, starting at index ${startIndex}`)
+      console.log('📋 Playlist tracks:', tracks.map((t, i) => `${i}: ${t.title}`).join(', '))
+      
+      // Store playlist in state and ref
+      setPlaylist(tracks)
+      playlistRef.current = tracks
+      setCurrentIndex(startIndex)
+      currentIndexRef.current = startIndex
+      
+      // Reset player and add all tracks to queue
+      await TrackPlayer.reset()
+      
+      const trackDataList: Track[] = tracks.map((track) => ({
+        id: track.id,
+        url: track.isDownloaded ? `file://${track.url}` : track.url,
+        title: track.title,
+        artist: 'MindEnglish',
+        duration: track.duration / 1000, // Convert ms to seconds
+      }))
+      
+      await TrackPlayer.add(trackDataList)
+      await TrackPlayer.setRate(playbackRate)
+      
+      // Skip to start index and play
+      if (startIndex > 0) {
+        await TrackPlayer.skip(startIndex)
+      }
+      await TrackPlayer.play()
+      
+      // Set current track
+      const currentTrack = tracks[startIndex]
+      setCurrentTrack(currentTrack)
+      console.log(`▶️ Starting track ${startIndex + 1}/${tracks.length}: ${currentTrack.title}`)
+      
+      // Save current track and update progress
+      await AsyncStorage.setItem("currentTrack", JSON.stringify(currentTrack))
+      await apiService.updateProgress({ postId: currentTrack.id, status: 'IN_PROGRESS', progress: 0, currentTime: 0 })
+      
+      // Load comments for this track
+      await loadComments(currentTrack.id)
+      
+      setIsLoading(false)
+    } catch (error) {
+      console.error("Error playing playlist:", error)
+      setIsLoading(false)
+      throw error
+    }
+  }
+
+  const playNext = async () => {
+    const currentPlaylist = playlistRef.current
+    const currentIdx = currentIndexRef.current
+    
+    console.log(`⏭️ playNext called - current index: ${currentIdx}, playlist length: ${currentPlaylist.length}`)
+    
+    if (currentPlaylist.length === 0) {
+      console.log("⚠️ No playlist loaded")
+      return
+    }
+    
+    if (currentIdx >= currentPlaylist.length - 1) {
+      console.log("⚠️ Already at last track")
+      return
+    }
+
+    try {
+      await TrackPlayer.skipToNext()
+      // State will be updated by the track changed listener
+    } catch (error) {
+      console.error("Error skipping to next track:", error)
+    }
+  }
+
+  const playPrevious = async () => {
+    const currentPlaylist = playlistRef.current
+    const currentIdx = currentIndexRef.current
+    
+    console.log(`⏮️ playPrevious called - current index: ${currentIdx}, playlist length: ${currentPlaylist.length}`)
+    
+    if (currentPlaylist.length === 0) {
+      console.log("⚠️ No playlist loaded")
+      return
+    }
+    
+    if (currentIdx <= 0) {
+      console.log("⚠️ Already at first track")
+      return
+    }
+
+    try {
+      await TrackPlayer.skipToPrevious()
+      // State will be updated by the track changed listener
+    } catch (error) {
+      console.error("Error skipping to previous track:", error)
+    }
+  }
+
   const playTrack = async (track: AudioTrack) => {
     try {
       setIsLoading(true)
 
-      if (sound) {
-        await sound.unloadAsync()
-      }
+      // Reset player and add single track
+      await TrackPlayer.reset()
+      
+      // Clear playlist state when playing single track
+      setPlaylist([])
+      playlistRef.current = []
+      setCurrentIndex(-1)
+      currentIndexRef.current = -1
 
       // Use downloaded file if available, otherwise stream
       const audioUri = track.isDownloaded ? `file://${track.url}` : track.url
 
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUri },
-        { shouldPlay: true, rate: playbackRate },
-      )
+      const trackData: Track = {
+        id: track.id,
+        url: audioUri,
+        title: track.title,
+        artist: 'MindEnglish',
+        duration: track.duration / 1000, // Convert ms to seconds
+      }
 
-      setSound(newSound)
+      await TrackPlayer.add(trackData)
+      await TrackPlayer.setRate(playbackRate)
+      await TrackPlayer.play()
+
       setCurrentTrack(track)
-      setIsPlaying(true)
-
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setPosition(status.positionMillis || 0)
-          setDuration(status.durationMillis || 0)
-          setIsPlaying(status.isPlaying)
-
-          // Auto-mark as completed when 90% finished
-          if (status.durationMillis && status.positionMillis) {
-            const progress = status.positionMillis / status.durationMillis
-            if (progress >= 0.9 && !track.isCompleted) {
-              markAsCompleted(track.id)
-            }
-          }
-        }
-      })
+      console.log(`🎵 Now Playing: ${track.title} [Single Track]`)
 
       // Save current track and update play count
       await AsyncStorage.setItem("currentTrack", JSON.stringify(track))
@@ -139,46 +318,42 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       // Load comments for this track
       await loadComments(track.id)
     } catch (error) {
-      console.log("Error playing track:", error)
+      console.error("Error playing track:", error)
+      if (error instanceof Error) {
+        console.error("Error details:", error.message)
+      }
+      setIsLoading(false)
+      throw error
     } finally {
       setIsLoading(false)
     }
   }
 
   const pauseTrack = async () => {
-    if (sound) {
-      await sound.pauseAsync()
-      setIsPlaying(false)
+    await TrackPlayer.pause()
 
-      // Save progress
-      if (currentTrack) {
-        const progress = duration > 0 ? position / duration : 0
-        await apiService.updateProgress({
-          postId: currentTrack.id,
-          status: 'IN_PROGRESS',
-          progress: progress,
-          currentTime: position,
-        })
-      }
+    // Save progress
+    if (currentTrack) {
+      const currentPosition = await TrackPlayer.getPosition()
+      const currentDuration = await TrackPlayer.getDuration()
+      const progress = currentDuration > 0 ? currentPosition / currentDuration : 0
+      await apiService.updateProgress({
+        postId: currentTrack.id,
+        status: 'IN_PROGRESS',
+        progress: progress,
+        currentTime: currentPosition * 1000, // Convert to ms
+      })
     }
   }
 
   const resumeTrack = async () => {
-    if (sound) {
-      await sound.playAsync()
-      setIsPlaying(true)
-    }
+    await TrackPlayer.play()
   }
 
   const stopTrack = async () => {
     try {
-      if (sound) {
-        await sound.stopAsync()
-        await sound.unloadAsync()
-        setSound(null)
-      }
+      await TrackPlayer.reset()
       setCurrentTrack(null)
-      setIsPlaying(false)
       setPosition(0)
       setDuration(0)
       await AsyncStorage.removeItem("currentTrack")
@@ -188,29 +363,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }
 
   const seekTo = async (newPosition: number) => {
-    if (sound) {
-      await sound.setPositionAsync(newPosition)
-      setPosition(newPosition)
+    // Convert ms to seconds
+    await TrackPlayer.seekTo(newPosition / 1000)
+    setPosition(newPosition)
 
-      // Save progress
-      if (currentTrack) {
-        const progress = duration > 0 ? newPosition / duration : 0
-        await apiService.updateProgress({
-          postId: currentTrack.id,
-          status: 'IN_PROGRESS',
-          progress: progress,
-          currentTime: newPosition,
-        })
-      }
+    // Save progress
+    if (currentTrack) {
+      const currentDuration = await TrackPlayer.getDuration()
+      const progress = currentDuration > 0 ? (newPosition / 1000) / currentDuration : 0
+      await apiService.updateProgress({
+        postId: currentTrack.id,
+        status: 'IN_PROGRESS',
+        progress: progress,
+        currentTime: newPosition,
+      })
     }
   }
 
   const setPlaybackRate = async (rate: number) => {
-    if (sound) {
-      await sound.setRateAsync(rate, true)
-      setPlaybackRateState(rate)
-      await AsyncStorage.setItem("playbackRate", rate.toString())
-    }
+    await TrackPlayer.setRate(rate)
+    setPlaybackRateState(rate)
+    await AsyncStorage.setItem("playbackRate", rate.toString())
   }
 
   const markAsCompleted = async (trackId: string) => {
@@ -424,7 +597,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         playbackRate,
         isLoading,
         comments,
+        playlist,
+        currentIndex,
         playTrack,
+        playPlaylist,
+        playNext,
+        playPrevious,
         pauseTrack,
         resumeTrack,
         stopTrack,

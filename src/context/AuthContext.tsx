@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { apiService } from "../services/api"
+import { revenueCatService } from "../services/revenueCat"
 import type { User, UpdateProfileRequest } from "../types/api"
 
 interface AuthContextType {
@@ -44,6 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("User data refreshed from API, isEmailVerified:", freshUserData.isEmailVerified)
           await AsyncStorage.setItem("user", JSON.stringify(freshUserData))
           
+          // Initialize RevenueCat with user ID
+          try {
+            await revenueCatService.initialize(freshUserData.id)
+            console.log("✅ RevenueCat initialized with user ID:", freshUserData.id)
+          } catch (rcError) {
+            console.log("⚠️ RevenueCat initialization failed (non-blocking):", rcError)
+          }
+          
           // Update verification status based on fresh data
           setNeedsVerification(!freshUserData.isEmailVerified)
         } catch (error: any) {
@@ -59,6 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // For other errors, fallback to cached data
             setUser(parsedUser)
             setNeedsVerification(!parsedUser.isEmailVerified)
+            
+            // Try to initialize RevenueCat with cached user
+            try {
+              await revenueCatService.initialize(parsedUser.id)
+              console.log("✅ RevenueCat initialized with cached user ID:", parsedUser.id)
+            } catch (rcError) {
+              console.log("⚠️ RevenueCat initialization failed (non-blocking):", rcError)
+            }
           }
         }
       }
@@ -90,6 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(response.user)
       await AsyncStorage.setItem("user", JSON.stringify(response.user))
       await AsyncStorage.setItem("token", response.token)
+      
+      // Initialize RevenueCat with user ID
+      try {
+        await revenueCatService.initialize(response.user.id)
+        console.log("✅ RevenueCat initialized after login with user ID:", response.user.id)
+      } catch (rcError) {
+        console.log("⚠️ RevenueCat initialization failed (non-blocking):", rcError)
+      }
       
       // Check if email verification is needed
       if (!response.user.isEmailVerified) {
@@ -135,6 +160,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      // Logout from RevenueCat
+      try {
+        await revenueCatService.logout()
+        console.log("✅ RevenueCat logged out")
+      } catch (rcError) {
+        console.log("⚠️ RevenueCat logout failed (non-blocking):", rcError)
+      }
+      
       await AsyncStorage.removeMany(["user", "token"])
       setUser(null)
       setNeedsVerification(false)

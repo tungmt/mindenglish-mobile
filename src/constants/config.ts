@@ -6,7 +6,7 @@
 
 // Automatically detect the appropriate base URL
 const getBaseURL = () => {
-  // return `http://192.168.1.211:3000`
+  // return `http://localhost:3000`
   return `https://app.mindenglish.vn`
 }
 

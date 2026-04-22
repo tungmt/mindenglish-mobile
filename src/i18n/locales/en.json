@@ -43,7 +43,13 @@
     "celebration_title": "Congratulations!",
     "celebration_text": "You completed {{lesson}}",
     "celebration_btn": "Continue",
-    "unknown_course": "Unknown"
+    "unknown_course": "Unknown",
+    "latest_courses": "Latest Courses",
+    "books": "books",
+    "latest_books": "Latest Books",
+    "audio_book": "Audio",
+    "article_book": "Article",
+    "posts": "posts"
   },
   "auth": {
     "welcome": "Welcome to MindEnglish",
@@ -243,6 +249,7 @@
     "posts_count": "{{count}} posts",
     "enrolling": "Enrolling...",
     "enroll": "Enroll Now",
+    "enroll_free": "Enroll for Free",
     "enrolled_success": "Course enrolled successfully!",
     "lessons_list": "Lessons",
     "content_list": "Content",
@@ -250,6 +257,7 @@
     "lesson_locked_msg": "Please enroll to unlock this lesson.",
     "post_locked_title": "Post Locked",
     "post_locked_msg": "Please enroll to unlock this post.",
+    "complete_previous": "Please complete the previous post first.",
     "error_loading": "Failed to load course. Please try again.",
     "not_found": "Course not found",
     "enroll_error": "Enrollment failed. Please try again.",
@@ -257,7 +265,28 @@
     "minutes_unit": "{{count}} min",
     "sequential": "Sequential",
     "parallel": "Parallel",
-    "article_reading_coming_soon": "Article reading feature coming soon!"
+    "article_reading_coming_soon": "Article reading feature coming soon!",
+    "price": "Price",
+    "show_more": "Show more",
+    "show_less": "Show less"
+  },
+  "purchase": {
+    "unlock_course": "Unlock Course",
+    "unlock_book": "Unlock Book",
+    "description": "Get lifetime access to all course content with a one-time purchase.",
+    "price": "Price:",
+    "feature_full_access": "Full access to all lessons",
+    "feature_offline": "Download for offline listening",
+    "feature_lifetime": "Lifetime access",
+    "buy_now": "Buy Now",
+    "processing": "Processing...",
+    "error": "Purchase Error",
+    "product_not_available": "This product is not available for purchase at the moment.",
+    "product_not_configured": "Purchase is not configured for this course.",
+    "failed": "Purchase failed. Please try again.",
+    "success_title": "Purchase Successful!",
+    "success_message": "You now have full access to this course.",
+    "purchased": "Purchased"
   },
   "audioBookDetail": {
     "title": "Audio Book",
@@ -279,9 +308,13 @@
     "content_list": "Content",
     "not_found": "Book not found",
     "no_description": "No description available",
-    "post_locked": "This post is locked. Complete previous posts to unlock.",
+    "post_locked": "This post is locked",
+    "complete_previous": "Complete previous posts to unlock.",
     "article_reading_coming_soon": "Article reading feature coming soon!",
-    "error_loading": "Failed to load book. Please try again."
+    "error_loading": "Failed to load book. Please try again.",
+    "show_more": "Show more",
+    "show_less": "Show less",
+    "price": "Price:"
   },
   "profileEdit": {
     "title": "Edit Profile",

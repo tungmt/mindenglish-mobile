@@ -43,7 +43,13 @@
     "celebration_title": "Chúc mừng!",
     "celebration_text": "Bạn đã hoàn thành {{lesson}}",
     "celebration_btn": "Tiếp tục",
-    "unknown_course": "Không xác định"
+    "unknown_course": "Không rõ",
+    "latest_courses": "Khóa học mới nhất",
+    "books": "sách",
+    "latest_books": "Sách mới nhất",
+    "audio_book": "Nghe",
+    "article_book": "Bài viết",
+    "posts": "bài"
   },
   "auth": {
     "welcome": "Chào mừng đến với MindEnglish",
@@ -243,6 +249,7 @@
     "posts_count": "{{count}} bài viết",
     "enrolling": "Đang đăng ký...",
     "enroll": "Đăng ký ngay",
+    "enroll_free": "Đăng ký miễn phí",
     "enrolled_success": "Đăng ký khóa học thành công!",
     "lessons_list": "Danh sách bài học",
     "content_list": "Nội dung",
@@ -250,6 +257,7 @@
     "lesson_locked_msg": "Vui lòng đăng ký khóa học để mở khóa bài học này.",
     "post_locked_title": "Bài viết bị khóa",
     "post_locked_msg": "Vui lòng đăng ký khóa học để mở khóa bài viết này.",
+    "complete_previous": "Vui lòng hoàn thành bài viết trước đó trước.",
     "error_loading": "Không thể tải thông tin khóa học. Vui lòng thử lại.",
     "not_found": "Không tìm thấy khóa học",
     "enroll_error": "Đăng ký thất bại. Vui lòng thử lại.",
@@ -257,7 +265,28 @@
     "minutes_unit": "{{count}} phút",
     "sequential": "Tuần tự",
     "parallel": "Song song",
-    "article_reading_coming_soon": "Tính năng đọc bài viết sắp ra mắt!"
+    "article_reading_coming_soon": "Tính năng đọc bài viết sắp ra mắt!",
+    "price": "Giá",
+    "show_more": "Xem thêm",
+    "show_less": "Thu gọn"
+  },
+  "purchase": {
+    "unlock_course": "Mở khóa khóa học",
+    "unlock_book": "Mở khóa sách",
+    "description": "Truy cập trọn đời toàn bộ nội dung khóa học chỉ với một lần thanh toán.",
+    "price": "Giá:",
+    "feature_full_access": "Truy cập đầy đủ tất cả bài học",
+    "feature_offline": "Tải về để nghe offline",
+    "feature_lifetime": "Truy cập trọn đời",
+    "buy_now": "Mua ngay",
+    "processing": "Đang xử lý...",
+    "error": "Lỗi thanh toán",
+    "product_not_available": "Sản phẩm này hiện không khả dụng.",
+    "product_not_configured": "Chức năng mua hàng chưa được cấu hình cho khóa học này.",
+    "failed": "Thanh toán thất bại. Vui lòng thử lại.",
+    "success_title": "Thanh toán thành công!",
+    "success_message": "Bạn đã có quyền truy cập đầy đủ vào khóa học này.",
+    "purchased": "Đã mua"
   },
   "audioBookDetail": {
     "title": "Audio Book",
@@ -279,9 +308,13 @@
     "content_list": "Nội dung",
     "not_found": "Không tìm thấy sách",
     "no_description": "Chưa có mô tả",
-    "post_locked": "Bài viết này đã khóa. Hoàn thành các bài trước để mở khóa.",
+    "post_locked": "Bài viết này đã khóa",
+    "complete_previous": "Hoàn thành các bài trước để mở khóa.",
     "article_reading_coming_soon": "Tính năng đọc bài viết sắp ra mắt!",
-    "error_loading": "Không thể tải thông tin sách. Vui lòng thử lại."
+    "error_loading": "Không thể tải thông tin sách. Vui lòng thử lại.",
+    "show_more": "Xem thêm",
+    "show_less": "Thu gọn",
+    "price": "Giá:"
   },
   "profileEdit": {
     "title": "Chỉnh sửa hồ sơ",

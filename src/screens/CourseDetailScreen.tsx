@@ -6,21 +6,30 @@ import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "../services/api"
 import { useAudio } from "../context/AudioContext"
 import { useTranslation } from "react-i18next"
+import { HTMLContent } from "../components/HTMLContent"
+import { PurchaseModal } from "../components/PurchaseModal"
+import { revenueCatService } from "../services/revenueCat"
+import { Platform } from "react-native"
 
 interface Course {
   id: string
   title: string
   description: string
   thumbnail: string
-  instructor: string
+  author: string
   duration: number
   booksCount: number
   postsCount: number
   level: string
   category: string
   price: number
+  isFree: boolean
+  currency: string
+  iapProductIdAndroid?: string
+  iapProductIdIos?: string
   accessMode: "SEQUENCE" | "PARALLEL"
   isEnrolled: boolean
+  isPurchased: boolean
   rating: number
   books: Book[]
 }
@@ -47,11 +56,16 @@ interface Post {
 
 export default function CourseDetailScreen({ navigation, route }: any) {
   const { courseId } = route.params
-  const { playTrack } = useAudio()
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
+  const [checkingPurchase, setCheckingPurchase] = useState(false)
+  const { playPlaylist } = useAudio()
   const { t } = useTranslation()
   const [course, setCourse] = useState<Course | null>(null)
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
+  const [expandedBookId, setExpandedBookId] = useState<string | null>(null)
+  const [localizedPrice, setLocalizedPrice] = useState<string | null>(null)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   useEffect(() => {
     loadCourseDetail()
@@ -62,6 +76,13 @@ export default function CourseDetailScreen({ navigation, route }: any) {
       setLoading(true)
       const courseData: any = await apiService.getCourseById(courseId)
       
+      // Check if user has purchased this course (if it's paid)
+      let isPurchased = true // Default to true for free courses
+      if (!courseData.isFree && courseData.price > 0) {
+        const purchaseCheck = await apiService.checkCoursePurchase(courseId)
+        isPurchased = purchaseCheck.purchased
+      }
+      
       // Transform API data to match component interface
       const books = courseData.courseBooks?.map((cb: any, bookIndex: number) => {
         const book = cb.book
@@ -71,13 +92,13 @@ export default function CourseDetailScreen({ navigation, route }: any) {
           const progressInfo = post.userProgress
           const isCompleted = progressInfo?.status === 'COMPLETED'
           
-          // Determine if post is locked based on access mode
+          // Determine if post is locked based on access mode and purchase status
           let isLocked = false
-          if (courseData.accessMode === 'SEQUENCE' && !courseData.isEnrolled) {
-            // In sequential mode, lock all posts if not enrolled
+          if (!isPurchased) {
+            // If not purchased, lock all content
             isLocked = true
           } else if (courseData.accessMode === 'SEQUENCE' && postIndex > 0) {
-            // In sequential mode when enrolled, lock posts until previous is completed
+            // In sequential mode when purchased, lock posts until previous is completed
             const prevPost = book.bookPosts[postIndex - 1]?.post
             const prevCompleted = prevPost?.userProgress?.status === 'COMPLETED'
             isLocked = !prevCompleted
@@ -116,7 +137,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
         title: courseData.title,
         description: courseData.description || t('courseDetail.no_description'),
         thumbnail: courseData.coverImage || "/placeholder.svg",
-        instructor: courseData.author || "MindEnglish",
+        author: courseData.author || "MindEnglish",
         duration: totalDuration,
         booksCount: books.length,
         postsCount: totalPosts,
@@ -124,10 +145,41 @@ export default function CourseDetailScreen({ navigation, route }: any) {
         category: "English Course",
         accessMode: courseData.accessMode || "SEQUENCE",
         price: courseData.price || 0,
+        isFree: courseData.isFree ?? true,
+        currency: courseData.currency || "VND",
+        iapProductIdAndroid: courseData.iapProductIdAndroid,
+        iapProductIdIos: courseData.iapProductIdIos,
         isEnrolled: courseData.isFavorited || false,
+        isPurchased: isPurchased,
         rating: 4.8, // TODO: Add rating system
         books: books,
       })
+      
+      // Expand first book by default
+      if (books.length > 0) {
+        setExpandedBookId(books[0].id)
+      }
+
+      // Fetch localized price from RevenueCat if course is paid
+      if (!courseData.isFree && courseData.price > 0) {
+        const productId = Platform.OS === 'ios' 
+          ? courseData.iapProductIdIos 
+          : courseData.iapProductIdAndroid
+        
+        if (productId) {
+          try {
+            console.log({productId})
+            const productInfo = await revenueCatService.getProductInfo(productId)
+            console.log({productInfo})
+            if (productInfo) {
+              setLocalizedPrice(productInfo.priceString)
+              console.log('📱 Localized price from RevenueCat:', productInfo.priceString)
+            }
+          } catch (error) {
+            console.log('Error fetching product info from RevenueCat:', error)
+          }
+        }
+      }
     } catch (error) {
       console.log("Error loading course detail:", error)
       Alert.alert(t('common.error'), t('courseDetail.error_loading'))
@@ -155,28 +207,101 @@ export default function CourseDetailScreen({ navigation, route }: any) {
     }
   }
 
+  const handlePurchase = async () => {
+    if (!course) return
+
+    const productId = Platform.OS === 'ios' 
+      ? course.iapProductIdIos 
+      : course.iapProductIdAndroid
+
+    if (!productId) {
+      Alert.alert(
+        t('purchase.error'),
+        t('purchase.product_not_configured')
+      )
+      return
+    }
+
+    setCheckingPurchase(true)
+    setShowPurchaseModal(false)
+
+    try {
+      // Purchase via RevenueCat
+      const success = await revenueCatService.purchaseCourse(course.id, productId)
+      
+      if (success) {
+        Alert.alert(
+          t('purchase.success_title'),
+          t('purchase.success_message'),
+          [
+            {
+              text: t('common.ok'),
+              onPress: () => {
+                // Reload course data to update purchase status
+                loadCourseDetail()
+              }
+            }
+          ]
+        )
+      }
+    } catch (error: any) {
+      console.log('Purchase error:', error)
+      Alert.alert(
+        t('purchase.error'),
+        error.message || t('purchase.failed')
+      )
+    } finally {
+      setCheckingPurchase(false)
+    }
+  }
+
   const handlePlayPost = async (post: Post, book: Book) => {
+    if (!course) return
+
+    // Check if course requires purchase
+    if (!course.isFree && !course.isPurchased) {
+      setShowPurchaseModal(true)
+      return
+    }
+
     if (post.isLocked) {
-      Alert.alert(t('courseDetail.post_locked_title'), t('courseDetail.post_locked_msg'))
+      Alert.alert(
+        t('bookDetail.post_locked'),
+        t('bookDetail.complete_previous')
+      )
       return
     }
 
     if (post.postType === "AUDIO" && post.audioUrl) {
-      const audioTrack = {
-        id: post.id,
-        title: `${book.title} - ${post.title}`,
-        url: post.audioUrl,
-        duration: post.duration,
-        courseId: course!.id,
-        content: post.content,
-        isCompleted: post.isCompleted,
-      }
+      // Get all audio posts from the book to create a playlist
+      const audioPosts = book!.posts.filter(p => p.postType === "AUDIO" && p.audioUrl)
+      
+      // Find the index of the current post in the audio posts
+      const currentIndex = audioPosts.findIndex(p => p.id === post.id)
 
-      await playTrack(audioTrack)
+      
+      
+      // Transform posts to audio tracks
+      const audioTracks = audioPosts.map(p => ({
+        id: p.id,
+        title: `${book!.title} - ${p.title}`,
+        url: p.audioUrl!,
+        duration: p.duration,
+        courseId: book!.id,
+        isCompleted: p.isCompleted
+      }))
+
+      console.log({audioPosts, audioTracks})
+
+      // Play as playlist
+      await playPlaylist(audioTracks, currentIndex)
       navigation.navigate("AudioPlayer", { trackId: post.id })
     } else if (post.postType === "ARTICLE") {
-      // Navigate to article reader
-      Alert.alert(t('courseDetail.article_reading_coming_soon'))
+      // Navigate to article reading screen
+      navigation.navigate("ArticleReader", { 
+        postId: post.id,
+        bookId: book!.id
+      })
     }
   }
 
@@ -185,11 +310,22 @@ export default function CourseDetailScreen({ navigation, route }: any) {
     return t('courseDetail.minutes_unit', { count: minutes })
   }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
+  const formatPrice = (price: number, currency: string = "VND") => {
+    if (currency === "VND") {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(price)
+    }
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "VND",
-    }).format(price)
+      currency: currency,
+    }).format(price / 100) // Assuming cents for non-VND currencies
+  }
+
+  const toggleBookExpansion = (bookId: string) => {
+    // If clicking the same book, collapse it. Otherwise, expand the new one
+    setExpandedBookId(expandedBookId === bookId ? null : bookId)
   }
 
   const renderPost = (post: Post, book: Book) => (
@@ -230,20 +366,34 @@ export default function CourseDetailScreen({ navigation, route }: any) {
     </TouchableOpacity>
   )
 
-  const renderBook = (book: Book) => (
-    <View key={book.id} style={styles.bookSection}>
-      <View style={styles.bookHeader}>
-        <Ionicons
-          name={book.bookType === "AUDIO" ? "musical-notes" : "document-text"}
-          size={20}
-          color="#007AFF"
-        />
-        <Text style={styles.bookTitle}>{book.title}</Text>
-        <Text style={styles.bookPostsCount}>({book.postsCount})</Text>
+  const renderBook = (book: Book) => {
+    const isExpanded = expandedBookId === book.id
+    
+    return (
+      <View key={book.id} style={styles.bookSection}>
+        <TouchableOpacity 
+          style={[styles.bookHeader, isExpanded && styles.bookHeaderExpanded]}
+          onPress={() => toggleBookExpansion(book.id)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={'book'}
+            size={20}
+            color="#007AFF"
+          />
+          <Text style={styles.bookTitle}>{book.title}</Text>
+          <Text style={styles.bookPostsCount}>({book.postsCount})</Text>
+          <Ionicons
+            name={isExpanded ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#666"
+            style={styles.expandIcon}
+          />
+        </TouchableOpacity>
+        {isExpanded && book.posts.map((post) => renderPost(post, book))}
       </View>
-      {book.posts.map((post) => renderPost(post, book))}
-    </View>
-  )
+    )
+  }
 
   if (loading) {
     return (
@@ -260,6 +410,8 @@ export default function CourseDetailScreen({ navigation, route }: any) {
       </View>
     )
   }
+
+  const descriptionStyle = isDescriptionExpanded ? styles.descriptionWrapper : styles.descriptionCollapsed
 
   return (
     <View style={styles.container}>
@@ -280,7 +432,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
           <Image source={{ uri: course.thumbnail }} style={styles.courseImage} />
           <View style={styles.courseDetails}>
             <Text style={styles.courseTitle}>{course.title}</Text>
-            <Text style={styles.courseInstructor}>{t('common.by', { name: course.instructor })}</Text>
+            <Text style={styles.courseInstructor}>{t('common.by', { name: course.author })}</Text>
 
             <View style={styles.courseStats}>
               <View style={styles.statItem}>
@@ -295,41 +447,67 @@ export default function CourseDetailScreen({ navigation, route }: any) {
                 <Ionicons name="list-outline" size={16} color="#666" />
                 <Text style={styles.statText}>{t('courseDetail.posts_count', { count: course.postsCount })}</Text>
               </View>
-              <View style={styles.statItem}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-                <Text style={styles.statText}>{course.rating}</Text>
-              </View>
             </View>
 
-            <View style={styles.courseMeta}>
-              <Text style={styles.courseLevel}>{course.level}</Text>
-              <Text style={styles.courseCategory}>{course.category}</Text>
-              <View style={styles.courseAccessMode}>
-                <Ionicons
-                  name={course.accessMode === "SEQUENCE" ? "arrow-forward" : "apps"}
-                  size={12}
-                  color="#7b1fa2"
+            <View style={styles.descriptionContainer}>
+              <View style={descriptionStyle}>
+                <HTMLContent 
+                  content={course.description}
+                  fontSize={16}
                 />
-                <Text style={styles.courseAccessModeText}>
-                  {course.accessMode === "SEQUENCE" ? t('courseDetail.sequential') : t('courseDetail.parallel')}
-                </Text>
               </View>
+              <TouchableOpacity 
+                style={styles.showMoreButton}
+                onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              >
+                <Text style={styles.showMoreText}>
+                  {isDescriptionExpanded ? t('courseDetail.show_less') : t('courseDetail.show_more')}
+                </Text>
+                <Ionicons 
+                  name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color="#007AFF" 
+                />
+              </TouchableOpacity>
             </View>
 
-            <Text style={styles.courseDescription}>{course.description}</Text>
-
-            {!course.isEnrolled && (
+            {!course.isFree && !course.isPurchased ? (
               <View style={styles.priceContainer}>
-                <Text style={styles.coursePrice}>{formatPrice(course.price)}</Text>
+                <View style={styles.priceInfo}>
+                  <Text style={styles.priceLabel}>{t('courseDetail.price')}</Text>
+                  <Text style={styles.coursePrice}>
+                    {localizedPrice || formatPrice(course.price, course.currency)}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.purchaseButton, checkingPurchase && styles.purchaseButtonDisabled]}
+                  onPress={() => setShowPurchaseModal(true)}
+                  disabled={checkingPurchase}
+                >
+                  <Ionicons name="lock-closed" size={16} color="white" style={styles.buttonIcon} />
+                  <Text style={styles.purchaseButtonText}>
+                    {checkingPurchase ? t('purchase.processing') : t('purchase.unlock_course')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : course.isFree && !course.isEnrolled ? (
+              <View style={styles.priceContainer}>
                 <TouchableOpacity
                   style={[styles.enrollButton, enrolling && styles.enrollButtonDisabled]}
                   onPress={handleEnroll}
                   disabled={enrolling}
                 >
-                  <Text style={styles.enrollButtonText}>{enrolling ? t('courseDetail.enrolling') : t('courseDetail.enroll')}</Text>
+                  <Text style={styles.enrollButtonText}>
+                    {enrolling ? t('courseDetail.enrolling') : t('courseDetail.enroll_free')}
+                  </Text>
                 </TouchableOpacity>
               </View>
-            )}
+            ) : course.isPurchased ? (
+              <View style={styles.purchasedBadge}>
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                <Text style={styles.purchasedText}>{t('purchase.purchased')}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -339,6 +517,21 @@ export default function CourseDetailScreen({ navigation, route }: any) {
           {course.books.map(renderBook)}
         </View>
       </ScrollView>
+
+      {/* Purchase Modal */}
+      {course && (
+        <PurchaseModal
+          visible={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+          title={course.title}
+          price={course.price}
+          currency={course.currency}
+          localizedPrice={localizedPrice}
+          iapProductIdAndroid={course.iapProductIdAndroid}
+          iapProductIdIos={course.iapProductIdIos}
+          onPurchaseSuccess={handlePurchase}
+        />
+      )}
     </View>
   )
 }
@@ -461,23 +654,90 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     lineHeight: 24,
+  },
+  descriptionContainer: {
     marginBottom: 20,
   },
+  descriptionWrapper: {
+    overflow: 'hidden',
+  },
+  descriptionCollapsed: {
+    overflow: 'hidden',
+    maxHeight: 120, // Approximately 5 lines with line height of 24
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    paddingVertical: 4,
+  },
+  showMoreText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+    marginRight: 4,
+  },
   priceContainer: {
+    flexDirection: "column",
+    gap: 12,
+    marginTop: 10,
+  },
+  priceInfo: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 8,
+  },
+  priceLabel: {
+    fontSize: 16,
+    color: "#666",
   },
   coursePrice: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: "#007AFF",
   },
-  enrollButton: {
+  purchaseButton: {
     backgroundColor: "#007AFF",
     paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  purchaseButtonDisabled: {
+    opacity: 0.6,
+  },
+  purchaseButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  purchasedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  purchasedText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#4CAF50",
+  },
+  enrollButton: {
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
   },
   enrollButtonDisabled: {
     opacity: 0.6,
@@ -515,6 +775,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: "#f8f9fa",
     borderRadius: 8,
+    marginBottom: 0,
+  },
+  bookHeaderExpanded: {
     marginBottom: 10,
   },
   bookTitle: {
@@ -527,6 +790,10 @@ const styles = StyleSheet.create({
   bookPostsCount: {
     fontSize: 14,
     color: "#666",
+    marginRight: 8,
+  },
+  expandIcon: {
+    marginLeft: 'auto',
   },
   lessonItem: {
     flexDirection: "row",

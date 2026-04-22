@@ -316,6 +316,34 @@ class ApiService {
     return this.makeRequest<Purchase[]>(API_CONFIG.ENDPOINTS.USER_PURCHASES)
   }
 
+  async checkCoursePurchase(courseId: string): Promise<{ purchased: boolean; purchase?: Purchase }> {
+    try {
+      const purchases = await this.getPurchases()
+      const coursePurchase = purchases.find(p => p.courseId === courseId && p.status === 'ACTIVE')
+      return {
+        purchased: !!coursePurchase,
+        purchase: coursePurchase,
+      }
+    } catch (error) {
+      console.log('Error checking course purchase:', error)
+      return { purchased: false }
+    }
+  }
+
+  async checkBookPurchase(bookId: string): Promise<{ purchased: boolean; purchase?: Purchase }> {
+    try {
+      const purchases = await this.getPurchases()
+      const bookPurchase = purchases.find(p => p.bookId === bookId && p.status === 'ACTIVE')
+      return {
+        purchased: !!bookPurchase,
+        purchase: bookPurchase,
+      }
+    } catch (error) {
+      console.log('Error checking book purchase:', error)
+      return { purchased: false }
+    }
+  }
+
   async createPurchase(data: CreatePurchaseRequest): Promise<Purchase> {
     return this.makeRequest<Purchase>(API_CONFIG.ENDPOINTS.USER_PURCHASES, {
       method: "POST",

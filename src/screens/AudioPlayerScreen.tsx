@@ -46,8 +46,13 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
     playbackRate,
     isLoading,
     comments,
+    playlist,
+    currentIndex,
     pauseTrack,
     resumeTrack,
+    playNext,
+    playPrevious,
+    playPlaylist,
     seekTo,
     setPlaybackRate,
     markAsCompleted,
@@ -58,7 +63,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
     likeComment,
   } = useAudio()
 
-  const [activeTab, setActiveTab] = useState<"transcript" | "notes" | "comments">("transcript")
+  const [activeTab, setActiveTab] = useState<"transcript" | "notes" | "comments" | "playlist">("transcript")
   const [showSpeedModal, setShowSpeedModal] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showCommentInput, setShowCommentInput] = useState(false)
@@ -191,6 +196,13 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
     }
   }
 
+  const handlePlayTrackFromPlaylist = async (index: number) => {
+    if (index !== currentIndex && playlist.length > 0) {
+      console.log(`🎵 User selected track ${index + 1} from playlist`)
+      await playPlaylist(playlist, index)
+    }
+  }
+
   const renderComment = (comment: Comment) => (
     <View key={comment.id} style={styles.commentItem}>
       <Image source={{ uri: comment.userAvatar }} style={styles.commentAvatar} />
@@ -297,6 +309,11 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
               />
               <Text style={styles.audioTitle}>{currentTrack.title}</Text>
               <Text style={styles.audioSubtitle}>MindEnglish</Text>
+              {playlist.length > 0 && (
+                <Text style={styles.playlistPosition}>
+                  {currentIndex + 1} / {playlist.length}
+                </Text>
+              )}
             </View>
 
             {/* Progress Bar */}
@@ -319,6 +336,18 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
 
             {/* Controls */}
             <Animated.View style={[styles.controls, { opacity: controlsOpacity }]}>
+              <TouchableOpacity 
+                style={styles.controlButton} 
+                onPress={playPrevious}
+                disabled={currentIndex <= 0 || playlist.length === 0}
+              >
+                <Ionicons 
+                  name="play-skip-back" 
+                  size={32} 
+                  color={currentIndex <= 0 || playlist.length === 0 ? "#CCC" : "#333"} 
+                />
+              </TouchableOpacity>
+
               <TouchableOpacity style={styles.controlButton} onPress={() => seekTo(Math.max(0, position - 15000))}>
                 <Ionicons name="play-back" size={24} color="#333" />
                 <Text style={styles.controlLabel}>-15s</Text>
@@ -331,6 +360,18 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
               <TouchableOpacity style={styles.controlButton} onPress={() => seekTo(Math.min(duration, position + 15000))}>
                 <Ionicons name="play-forward" size={24} color="#333" />
                 <Text style={styles.controlLabel}>+15s</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.controlButton} 
+                onPress={playNext}
+                disabled={currentIndex >= playlist.length - 1 || playlist.length === 0}
+              >
+                <Ionicons 
+                  name="play-skip-forward" 
+                  size={32} 
+                  color={currentIndex >= playlist.length - 1 || playlist.length === 0 ? "#CCC" : "#333"} 
+                />
               </TouchableOpacity>
             </Animated.View>
 
@@ -390,6 +431,16 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
         >
           <Text style={[styles.tabText, activeTab === "transcript" && styles.activeTabText]}>{t('audioPlayer.transcript')}</Text>
         </TouchableOpacity>
+        {playlist.length > 0 && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "playlist" && styles.activeTab]}
+            onPress={() => setActiveTab("playlist")}
+          >
+            <Text style={[styles.tabText, activeTab === "playlist" && styles.activeTabText]}>
+              Playlist ({playlist.length})
+            </Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.tab, activeTab === "notes" && styles.activeTab]}
           onPress={() => setActiveTab("notes")}
@@ -420,6 +471,63 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
               {currentTrack.transcript ||
                 t('audioPlayer.transcript_placeholder')}
             </Text>
+          </View>
+        )}
+
+        {activeTab === "playlist" && (
+          <View style={styles.playlistContainer}>
+            {playlist.length > 0 ? (
+              playlist.map((track, index) => (
+                <TouchableOpacity
+                  key={track.id}
+                  style={[
+                    styles.playlistItem,
+                    currentIndex === index && styles.playlistItemActive
+                  ]}
+                  onPress={() => handlePlayTrackFromPlaylist(index)}
+                >
+                  <View style={styles.playlistItemLeft}>
+                    <View style={[
+                      styles.playlistNumber,
+                      currentIndex === index && styles.playlistNumberActive
+                    ]}>
+                      {currentIndex === index && isPlaying ? (
+                        <Ionicons name="volume-high" size={16} color="#007AFF" />
+                      ) : (
+                        <Text style={[
+                          styles.playlistNumberText,
+                          currentIndex === index && styles.playlistNumberTextActive
+                        ]}>
+                          {index + 1}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.playlistItemInfo}>
+                      <Text
+                        style={[
+                          styles.playlistItemTitle,
+                          currentIndex === index && styles.playlistItemTitleActive
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {track.title}
+                      </Text>
+                      <Text style={styles.playlistItemDuration}>
+                        {formatTime(track.duration)}
+                      </Text>
+                    </View>
+                  </View>
+                  {currentIndex === index && (
+                    <Ionicons name="musical-note" size={18} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.noPlaylist}>
+                <Ionicons name="musical-notes-outline" size={48} color="#CCC" />
+                <Text style={styles.noPlaylistText}>No playlist</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -599,6 +707,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
+  playlistPosition: {
+    fontSize: 14,
+    color: "#007AFF",
+    marginTop: 8,
+    fontWeight: "600",
+  },
   progressContainer: {
     paddingHorizontal: 40,
     marginBottom: 15,
@@ -623,7 +737,7 @@ const styles = StyleSheet.create({
   },
   controlButton: {
     alignItems: "center",
-    marginHorizontal: 30,
+    marginHorizontal: 15,
   },
   controlLabel: {
     fontSize: 12,
@@ -883,5 +997,78 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#007AFF",
     textAlign: "center",
+  },
+  playlistContainer: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    minHeight: 300,
+  },
+  playlistItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: "#f8f9fa",
+  },
+  playlistItemActive: {
+    backgroundColor: "#e3f2fd",
+    borderWidth: 1,
+    borderColor: "#007AFF",
+  },
+  playlistItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  playlistNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#e0e0e0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  playlistNumberActive: {
+    backgroundColor: "#007AFF20",
+  },
+  playlistNumberText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+  },
+  playlistNumberTextActive: {
+    color: "#007AFF",
+  },
+  playlistItemInfo: {
+    flex: 1,
+  },
+  playlistItemTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 4,
+  },
+  playlistItemTitleActive: {
+    color: "#007AFF",
+    fontWeight: "600",
+  },
+  playlistItemDuration: {
+    fontSize: 12,
+    color: "#666",
+  },
+  noPlaylist: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  noPlaylistText: {
+    fontSize: 16,
+    color: "#999",
+    marginTop: 12,
   },
 })

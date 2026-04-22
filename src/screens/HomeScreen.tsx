@@ -11,13 +11,13 @@ import images from "../constants/images"
 
 const { width } = Dimensions.get("window")
 
-interface RecentAudio {
+interface LatestBook {
   id: string
   title: string
-  courseName: string
-  duration: number
-  progress: number
+  author: string
+  bookType: string
   thumbnail: string | null
+  postsCount: number
 }
 
 interface TodayStats {
@@ -26,24 +26,25 @@ interface TodayStats {
   streak: number
 }
 
-interface PopularAudio {
+interface LatestCourse {
   id: string
   title: string
-  listenerCount: number
+  author: string
   thumbnail: string | null
+  booksCount: number
 }
 
 export default function HomeScreen({ navigation }: any) {
   const { t } = useTranslation()
   const { user, logout } = useAuth()
   const { currentTrack, playTrack } = useAudio()
-  const [recentAudios, setRecentAudios] = useState<RecentAudio[]>([])
+  const [latestBooks, setLatestBooks] = useState<LatestBook[]>([])
   const [todayStats, setTodayStats] = useState<TodayStats>({
     listeningTime: 0,
     completedLessons: 0,
     streak: 0,
   })
-  const [popularAudios, setPopularAudios] = useState<PopularAudio[]>([])
+  const [latestCourses, setLatestCourses] = useState<LatestCourse[]>([])
   const [showCelebration, setShowCelebration] = useState(false)
 
   useEffect(() => {
@@ -53,47 +54,8 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadHomeData = async () => {
     try {
-      // Load user progress for recent listening
+      // Load user progress for statistics only
       const progressData = await apiService.getUserProgress()
-
-      // Get recent posts with progress
-      const recentPostsWithProgress = (progressData || [])
-        .filter((p: any) => p.status === 'IN_PROGRESS' || p.currentTime > 0)
-        .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        .slice(0, 3)
-
-      // Load post details and book/course info for recent items
-      const recentAudiosData = await Promise.all(
-        recentPostsWithProgress.map(async (progress: any) => {
-          try {
-            const post: any = await apiService.getPostById(progress.postId)
-            let courseName = t('home.unknown_course')
-
-            // Get course/book name from relationships
-            if (progress.book) {
-              courseName = progress.book.title
-            } else if (progress.course) {
-              courseName = progress.course.title
-            } else if (post.bookPosts?.[0]?.book) {
-              courseName = post.bookPosts[0].book.title
-            }
-
-            return {
-              id: post.id,
-              title: post.title,
-              courseName: courseName,
-              duration: (post.duration || 0) * 1000, // Convert to milliseconds
-              progress: post.duration ? (progress.currentTime || 0) / post.duration : 0,
-              thumbnail: post.avatar,
-            }
-          } catch (err) {
-            console.log('Error loading post:', err)
-            return null
-          }
-        })
-      )
-
-      setRecentAudios(recentAudiosData.filter(Boolean) as RecentAudio[])
 
       // Calculate today's stats from progress
       const completedToday = (progressData || []).filter((p: any) => {
@@ -109,16 +71,30 @@ export default function HomeScreen({ navigation }: any) {
         streak: 0, // TODO: Calculate streak from listening stats
       })
 
-      // Load popular courses/books
-      const coursesResponse = await apiService.getCourses({ page: 1, limit: 5 })
-      const popularAudiosData = (coursesResponse.courses || []).slice(0, 3).map((course: any) => ({
-        id: course.id,
-        title: course.title,
-        listenerCount: course._count?.favorites || 0,
-        thumbnail: course.coverImage || course.avatar,
+      // Load latest 3 books
+      const booksResponse = await apiService.getBooks({ page: 1, limit: 3 })
+      const latestBooksData = (booksResponse.books || []).slice(0, 3).map((book: any) => ({
+        id: book.id,
+        title: book.title,
+        author: book.author || 'MindEnglish',
+        bookType: book.bookType,
+        thumbnail: book.coverImage || book.avatar,
+        postsCount: book._count?.bookPosts || 0,
       }))
 
-      setPopularAudios(popularAudiosData)
+      setLatestBooks(latestBooksData)
+
+      // Load latest 3 courses
+      const coursesResponse = await apiService.getCourses({ page: 1, limit: 3 })
+      const latestCoursesData = (coursesResponse.courses || []).slice(0, 3).map((course: any) => ({
+        id: course.id,
+        title: course.title,
+        author: course.author || 'MindEnglish',
+        thumbnail: course.coverImage || course.avatar,
+        booksCount: course._count?.courseBooks || 0,
+      }))
+
+      setLatestCourses(latestCoursesData)
     } catch (error: any) {
       console.log("Error loading home data:", error)
       
@@ -141,9 +117,9 @@ export default function HomeScreen({ navigation }: any) {
       }
       
       // Initialize with empty data on error
-      setRecentAudios([])
+      setLatestBooks([])
       setTodayStats({ listeningTime: 0, completedLessons: 0, streak: 0 })
-      setPopularAudios([])
+      setLatestCourses([])
     }
   }
 
@@ -179,38 +155,52 @@ export default function HomeScreen({ navigation }: any) {
     return `${minutes}m`
   }
 
-  const renderRecentAudio = (audio: RecentAudio) => (
-    <TouchableOpacity key={audio.id} style={styles.recentAudioCard}>
-      <Image source={audio.thumbnail ? { uri: audio.thumbnail } : images.appIcon} style={styles.recentAudioImage} />
+  const renderLatestBook = (book: LatestBook) => (
+    <TouchableOpacity 
+      key={book.id} 
+      style={styles.recentAudioCard}
+      onPress={() => navigation.navigate('BookDetail', { bookId: book.id })}
+    >
+      <Image source={book.thumbnail ? { uri: book.thumbnail } : images.appIcon} style={styles.recentAudioImage} />
       <View style={styles.recentAudioInfo}>
         <Text style={styles.recentAudioTitle} numberOfLines={2}>
-          {audio.title}
+          {book.title}
         </Text>
-        <Text style={styles.recentAudioCourse}>{audio.courseName}</Text>
+        <Text style={styles.recentAudioCourse}>{book.author}</Text>
         <View style={styles.recentAudioMeta}>
-          <Text style={styles.recentAudioDuration}>{formatDuration(audio.duration)}</Text>
-          <View style={styles.recentAudioProgress}>
-            <View style={[styles.recentAudioProgressFill, { width: `${audio.progress * 100}%` }]} />
+          <View style={styles.bookTypeBadge}>
+            <Ionicons 
+              name={book.bookType === 'AUDIO' ? 'headset' : 'document-text'} 
+              size={12} 
+              color="#007AFF" 
+            />
+            <Text style={styles.bookTypeText}>
+              {book.bookType === 'AUDIO' ? t('home.audio_book') : t('home.article_book')}
+            </Text>
           </View>
+          <Text style={styles.recentAudioDuration}>{book.postsCount} {t('home.posts')}</Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.recentAudioPlayButton}>
-        <Ionicons name="play" size={16} color="white" />
-      </TouchableOpacity>
+      <View style={styles.recentAudioPlayButton}>
+        <Ionicons name="chevron-forward" size={20} color="white" />
+      </View>
     </TouchableOpacity>
   )
 
-  console.log({popularAudios})
-  const renderPopularAudio = (audio: PopularAudio) => (
-    <TouchableOpacity key={audio.id} style={styles.popularAudioItem}>
-      <Image source={audio.thumbnail ? { uri: audio.thumbnail } : images.appIcon} style={styles.popularAudioImage} />
+  const renderLatestCourse = (course: LatestCourse) => (
+    <TouchableOpacity 
+      key={course.id} 
+      style={styles.popularAudioItem}
+      onPress={() => navigation.navigate('CourseDetail', { courseId: course.id })}
+    >
+      <Image source={course.thumbnail ? { uri: course.thumbnail } : images.appIcon} style={styles.popularAudioImage} />
       <View style={styles.popularAudioInfo}>
         <Text style={styles.popularAudioTitle} numberOfLines={1}>
-          {audio.title}
+          {course.title}
         </Text>
-        <Text style={styles.popularAudioListeners}>{t('home.listeners_count', { count: audio.listenerCount })}</Text>
+        <Text style={styles.popularAudioListeners}>{course.author} • {course.booksCount} {t('home.books')}</Text>
       </View>
-      <Ionicons name="trending-up" size={16} color="#FF9500" />
+      <Ionicons name="chevron-forward" size={20} color="#999" />
     </TouchableOpacity>
   )
 
@@ -292,31 +282,31 @@ export default function HomeScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* Recent Listening */}
-      {
-        recentAudios.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('home.recently_listened')}</Text>
-              <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => navigation.navigate("Library")}>
-                <FontAwesome6 name="arrow-right" size={20} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-            {recentAudios.map(renderRecentAudio)}
+      {/* Latest Books */}
+      {latestBooks.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.latest_books')}</Text>
+            <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => navigation.navigate("Library")}>
+              <FontAwesome6 name="arrow-right" size={20} color="#007AFF" />
+            </TouchableOpacity>
           </View>
-        )
-      }
-
-      {/* Popular in Community */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('home.popular_title')}</Text>
-          <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => navigation.navigate("Community")}>
-            <FontAwesome6 name="arrow-right" size={20} color="#007AFF" />
-          </TouchableOpacity>
+          {latestBooks.map(renderLatestBook)}
         </View>
-        <View style={styles.popularContainer}>{popularAudios.map(renderPopularAudio)}</View>
-      </View>
+      )}
+
+      {/* Latest Courses */}
+      {latestCourses.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('home.latest_courses')}</Text>
+            <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => navigation.navigate("Explore")}>
+              <FontAwesome6 name="arrow-right" size={20} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.popularContainer}>{latestCourses.map(renderLatestCourse)}</View>
+        </View>
+      )}
 
       {/* Quick Actions */}
       <View style={styles.section}>
@@ -550,6 +540,21 @@ const styles = StyleSheet.create({
   recentAudioMeta: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
+  },
+  bookTypeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F4FF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  bookTypeText: {
+    fontSize: 11,
+    color: "#007AFF",
+    fontWeight: "500",
   },
   recentAudioDuration: {
     fontSize: 12,

@@ -17,10 +17,9 @@ try {
   console.log('RevenueCat module not available - purchases will be disabled:', error);
 }
 
-// RevenueCat API Keys (replace with your actual keys)
 const REVENUECAT_API_KEY = Platform.select({
-  ios: 'YOUR_IOS_API_KEY',
-  android: 'YOUR_ANDROID_API_KEY',
+  ios: 'appl_ysoPKZmaCxGAJjCguPKyVTdvfJa',
+  android: 'goog_UDOJAjTgfBdNrbMPpTOwivQtwvP',
 }) as string;
 
 class RevenueCatService {
@@ -68,6 +67,55 @@ class RevenueCatService {
     }
   }
 
+  async getProductInfo(iapProductId: string): Promise<{ price: string; priceString: string; currencyCode: string } | null> {
+    if (!this.available) {
+      console.log('RevenueCat not available');
+      return null;
+    }
+
+    // Ensure RevenueCat is initialized before fetching products
+    if (!this.initialized) {
+      console.log('⚠️ RevenueCat not initialized, attempting to initialize with anonymous user...');
+      try {
+        await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+        this.initialized = true;
+        console.log('✅ RevenueCat initialized successfully');
+      } catch (error) {
+        console.log('❌ Failed to initialize RevenueCat:', error);
+        return null;
+      }
+    }
+
+    try {
+      console.log('🔍 Fetching product info for:', iapProductId);
+      
+      // Get products directly by product ID (more reliable than offerings)
+      const products = await Purchases.getProducts([iapProductId]);
+      
+      if (!products || products.length === 0) {
+        console.log('❌ No products found for ID:', iapProductId);
+        return null;
+      }
+
+      const product = products[0];
+      console.log('✅ Product found:', {
+        identifier: product.identifier,
+        price: product.price,
+        priceString: product.priceString,
+        currencyCode: product.currencyCode,
+      });
+
+      return {
+        price: product.price,
+        priceString: product.priceString, // Localized price string (e.g., "$9.99", "₫99,000")
+        currencyCode: product.currencyCode,
+      };
+    } catch (error) {
+      console.log('❌ Error getting product info:', error);
+      return null;
+    }
+  }
+
   async purchasePackage(packageToPurchase: any): Promise<any | null> {
     if (!this.available) {
       throw new Error('Purchases are not available on this device');
@@ -91,25 +139,36 @@ class RevenueCatService {
       throw new Error('Purchases are not available on this device');
     }
 
+    // Ensure RevenueCat is initialized
+    if (!this.initialized) {
+      console.log('⚠️ RevenueCat not initialized, attempting to initialize...');
+      try {
+        await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+        this.initialized = true;
+        console.log('✅ RevenueCat initialized successfully');
+      } catch (error) {
+        console.log('❌ Failed to initialize RevenueCat:', error);
+        throw new Error('Failed to initialize payment system');
+      }
+    }
+
     try {
-      // Get the offering/package for this product
-      const offerings = await this.getOfferings();
-      if (!offerings) {
-        throw new Error('No offerings available');
+      console.log('🛒 Starting purchase for course:', courseId, 'product:', iapProductId);
+      
+      // Get the product directly by ID
+      const products = await Purchases.getProducts([iapProductId]);
+      if (!products || products.length === 0) {
+        throw new Error(`Product not found for ID: ${iapProductId}`);
       }
 
-      // Find the package matching the product ID
-      const packages = offerings.availablePackages;
-      const packageToPurchase = packages.find((pkg: any) => pkg.product.identifier === iapProductId);
+      const product = products[0];
+      console.log('✅ Product found, initiating purchase...');
 
-      if (!packageToPurchase) {
-        throw new Error(`Package not found for product ID: ${iapProductId}`);
-      }
-
-      // Make the purchase
-      const customerInfo = await this.purchasePackage(packageToPurchase);
+      // Make the purchase directly with the product
+      const { customerInfo } = await Purchases.purchaseStoreProduct(product);
       
       if (customerInfo) {
+        console.log('✅ Purchase successful, syncing with backend...');
         // Verify with backend
         const transactionId = customerInfo.originalPurchaseDate || Date.now().toString();
         await apiService.createPurchase({
@@ -117,12 +176,74 @@ class RevenueCatService {
           transactionId,
         } as any);
         
+        console.log('✅ Purchase synced with backend');
         return true;
       }
       
       return false;
-    } catch (error) {
-      console.log('Error purchasing course:', error);
+    } catch (error: any) {
+      if (error.userCancelled) {
+        console.log('ℹ️ User cancelled purchase');
+        return false;
+      }
+      console.log('❌ Error purchasing course:', error);
+      throw error;
+    }
+  }
+
+  async purchaseBook(bookId: string, iapProductId: string): Promise<boolean> {
+    if (!this.available) {
+      throw new Error('Purchases are not available on this device');
+    }
+
+    // Ensure RevenueCat is initialized
+    if (!this.initialized) {
+      console.log('⚠️ RevenueCat not initialized, attempting to initialize...');
+      try {
+        await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+        this.initialized = true;
+        console.log('✅ RevenueCat initialized successfully');
+      } catch (error) {
+        console.log('❌ Failed to initialize RevenueCat:', error);
+        throw new Error('Failed to initialize payment system');
+      }
+    }
+
+    try {
+      console.log('🛒 Starting purchase for book:', bookId, 'product:', iapProductId);
+      
+      // Get the product directly by ID
+      const products = await Purchases.getProducts([iapProductId]);
+      if (!products || products.length === 0) {
+        throw new Error(`Product not found for ID: ${iapProductId}`);
+      }
+
+      const product = products[0];
+      console.log('✅ Product found, initiating purchase...');
+
+      // Make the purchase directly with the product
+      const { customerInfo } = await Purchases.purchaseStoreProduct(product);
+      
+      if (customerInfo) {
+        console.log('✅ Purchase successful, syncing with backend...');
+        // Verify with backend
+        const transactionId = customerInfo.originalPurchaseDate || Date.now().toString();
+        await apiService.createPurchase({
+          bookId,
+          transactionId,
+        } as any);
+        
+        console.log('✅ Purchase synced with backend');
+        return true;
+      }
+      
+      return false;
+    } catch (error: any) {
+      if (error.userCancelled) {
+        console.log('ℹ️ User cancelled purchase');
+        return false;
+      }
+      console.log('❌ Error purchasing book:', error);
       throw error;
     }
   }
@@ -132,34 +253,53 @@ class RevenueCatService {
       throw new Error('Purchases are not available on this device');
     }
 
+    // Ensure RevenueCat is initialized
+    if (!this.initialized) {
+      console.log('⚠️ RevenueCat not initialized, attempting to initialize...');
+      try {
+        await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+        this.initialized = true;
+        console.log('✅ RevenueCat initialized successfully');
+      } catch (error) {
+        console.log('❌ Failed to initialize RevenueCat:', error);
+        throw new Error('Failed to initialize payment system');
+      }
+    }
+
     try {
-      const offerings = await this.getOfferings();
-      if (!offerings) {
-        throw new Error('No offerings available');
+      console.log('🛒 Starting purchase for lesson:', lessonId, 'product:', iapProductId);
+      
+      // Get the product directly by ID
+      const products = await Purchases.getProducts([iapProductId]);
+      if (!products || products.length === 0) {
+        throw new Error(`Product not found for ID: ${iapProductId}`);
       }
 
-      const packages = offerings.availablePackages;
-      const packageToPurchase = packages.find((pkg: any) => pkg.product.identifier === iapProductId);
+      const product = products[0];
+      console.log('✅ Product found, initiating purchase...');
 
-      if (!packageToPurchase) {
-        throw new Error(`Package not found for product ID: ${iapProductId}`);
-      }
-
-      const customerInfo = await this.purchasePackage(packageToPurchase);
+      // Make the purchase directly with the product
+      const { customerInfo } = await Purchases.purchaseStoreProduct(product);
       
       if (customerInfo) {
+        console.log('✅ Purchase successful, syncing with backend...');
         const transactionId = customerInfo.originalPurchaseDate || Date.now().toString();
         await apiService.createPurchase({
           postId: lessonId,
           transactionId,
         } as any);
         
+        console.log('✅ Purchase synced with backend');
         return true;
       }
       
       return false;
-    } catch (error) {
-      console.log('Error purchasing lesson:', error);
+    } catch (error: any) {
+      if (error.userCancelled) {
+        console.log('ℹ️ User cancelled purchase');
+        return false;
+      }
+      console.log('❌ Error purchasing lesson:', error);
       throw error;
     }
   }

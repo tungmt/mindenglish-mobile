@@ -1,10 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Alert, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAudio } from "../context/AudioContext"
 import { useTranslation } from "react-i18next"
+import { HTMLContent } from "../components/HTMLContent"
+import { PurchaseModal } from "../components/PurchaseModal"
+import { revenueCatService } from "../services/revenueCat"
 
 interface Book {
   id: string
@@ -17,6 +20,12 @@ interface Book {
   level: string
   bookType: "AUDIO" | "ARTICLE"
   accessMode: "SEQUENCE" | "PARALLEL"
+  price: number
+  isFree: boolean
+  currency: string
+  iapProductIdAndroid?: string
+  iapProductIdIos?: string
+  isPurchased: boolean
   isDownloaded: boolean
   posts: Post[]
 }
@@ -36,10 +45,14 @@ interface Post {
 
 export default function BookDetailScreen({ navigation, route }: any) {
   const { bookId } = route.params
-  const { playTrack } = useAudio()
+  const { playTrack, playPlaylist } = useAudio()
   const { t } = useTranslation()
   const [book, setBook] = useState<Book | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false)
+  const [checkingPurchase, setCheckingPurchase] = useState(false)
+  const [localizedPrice, setLocalizedPrice] = useState<string | null>(null)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   useEffect(() => {
     loadBookDetail()
@@ -54,6 +67,13 @@ export default function BookDetailScreen({ navigation, route }: any) {
 
       console.log('BookDetailScreen - Loaded book:', bookData.id, bookData.title)
 
+      // Check if user has purchased this book (if it's paid)
+      let isPurchased = true // Default to true for free books
+      if (!bookData.isFree && (bookData.price ?? 0) > 0) {
+        const purchaseCheck = await apiService.checkBookPurchase(bookId)
+        isPurchased = purchaseCheck.purchased
+      }
+
       // Transform API data to match component interface
       const bookPosts: any[] = bookData.bookPosts || []
       const posts = bookPosts.map((bp, index) => {
@@ -61,10 +81,13 @@ export default function BookDetailScreen({ navigation, route }: any) {
         // Get progress from userProgress if available
         const isCompleted = post.userProgress?.status === 'COMPLETED'
         
-        // Lock logic for sequential books
+        // Determine if post is locked based on purchase status and access mode
         let isLocked = false
-        if (bookData.accessMode === 'SEQUENCE' && index > 0) {
-          // In sequential mode, lock if previous post not completed
+        if (!isPurchased) {
+          // If not purchased, lock all content
+          isLocked = true
+        } else if (bookData.accessMode === 'SEQUENCE' && index > 0) {
+          // In sequential mode when purchased, lock posts until previous is completed
           const prevBp = bookPosts[index - 1]
           const prevCompleted = prevBp?.post?.userProgress?.status === 'COMPLETED'
           isLocked = !prevCompleted
@@ -97,12 +120,36 @@ export default function BookDetailScreen({ navigation, route }: any) {
         level: bookData.level || "BEGINNER",
         bookType: bookData.bookType,
         accessMode: bookData.accessMode || "SEQUENCE",
+        price: bookData.price || 0,
+        isFree: bookData.isFree ?? true,
+        currency: bookData.currency || "VND",
+        iapProductIdAndroid: bookData.iapProductIdAndroid,
+        iapProductIdIos: bookData.iapProductIdIos,
+        isPurchased: isPurchased,
         isDownloaded: false, // TODO: Track downloads locally
         posts: posts,
       })
+
+      // Fetch localized price from RevenueCat if book is paid
+      if (!bookData.isFree && (bookData.price ?? 0) > 0) {
+        const productId = Platform.OS === 'ios' 
+          ? bookData.iapProductIdIos 
+          : bookData.iapProductIdAndroid
+        
+        if (productId) {
+          try {
+            const productInfo = await revenueCatService.getProductInfo(productId)
+            if (productInfo) {
+              setLocalizedPrice(productInfo.priceString)
+              console.log('📱 Localized price from RevenueCat:', productInfo.priceString)
+            }
+          } catch (error) {
+            console.log('Error fetching product info from RevenueCat:', error)
+          }
+        }
+      }
     } catch (error: any) {
       console.log("Error loading book detail:", error)
-      const { Alert } = await import('react-native')
       Alert.alert(
         t('common.error'), 
         error?.message || t('bookDetail.error_loading'),
@@ -116,24 +163,95 @@ export default function BookDetailScreen({ navigation, route }: any) {
     }
   }
 
+  const handlePurchase = async () => {
+    if (!book) return
+
+    const productId = Platform.OS === 'ios' 
+      ? book.iapProductIdIos 
+      : book.iapProductIdAndroid
+
+    if (!productId) {
+      Alert.alert(
+        t('purchase.error'),
+        t('purchase.product_not_configured')
+      )
+      return
+    }
+
+    setCheckingPurchase(true)
+    setShowPurchaseModal(false)
+
+    try {
+      // Purchase via RevenueCat
+      const success = await revenueCatService.purchaseBook(book.id, productId)
+      
+      if (success) {
+        Alert.alert(
+          t('purchase.success_title'),
+          t('purchase.success_message'),
+          [
+            {
+              text: t('common.ok'),
+              onPress: () => {
+                // Reload book data to update purchase status
+                loadBookDetail()
+              }
+            }
+          ]
+        )
+      }
+    } catch (error: any) {
+      console.log('Purchase error:', error)
+      Alert.alert(
+        t('purchase.error'),
+        error.message || t('purchase.failed')
+      )
+    } finally {
+      setCheckingPurchase(false)
+    }
+  }
+
   const handlePlayPost = async (post: Post) => {
+    if (!book) return
+
+    // Check if book requires purchase
+    if (!book.isFree && !book.isPurchased) {
+      setShowPurchaseModal(true)
+      return
+    }
+
     if (post.isLocked) {
-      alert(t('bookDetail.post_locked'))
+      Alert.alert(
+        t('bookDetail.post_locked'),
+        t('bookDetail.complete_previous')
+      )
       return
     }
 
     if (post.postType === "AUDIO" && post.audioUrl) {
-      const audioTrack = {
-        id: post.id,
-        title: `${book!.title} - ${post.title}`,
-        url: post.audioUrl,
-        duration: post.duration,
-        courseId: book!.id,
-        isCompleted: post.isCompleted,
-        isDownloaded: post.isDownloaded,
-      }
+      // Get all audio posts from the book to create a playlist
+      const audioPosts = book!.posts.filter(p => p.postType === "AUDIO" && p.audioUrl)
+      
+      // Find the index of the current post in the audio posts
+      const currentIndex = audioPosts.findIndex(p => p.id === post.id)
 
-      await playTrack(audioTrack)
+      
+      
+      // Transform posts to audio tracks
+      const audioTracks = audioPosts.map(p => ({
+        id: p.id,
+        title: `${book!.title} - ${p.title}`,
+        url: p.audioUrl!,
+        duration: p.duration,
+        courseId: book!.id,
+        isCompleted: p.isCompleted,
+        isDownloaded: p.isDownloaded,
+      }))
+
+      console.log({audioPosts, audioTracks})
+
+      // Play as playlist
+      await playPlaylist(audioTracks, currentIndex)
       navigation.navigate("AudioPlayer", { trackId: post.id })
     } else if (post.postType === "ARTICLE") {
       // Navigate to article reading screen
@@ -151,6 +269,19 @@ export default function BookDetailScreen({ navigation, route }: any) {
       return `${hours}h ${minutes}m`
     }
     return `${minutes}m`
+  }
+
+  const formatPrice = (price: number, currency: string = "VND") => {
+    if (currency === "VND") {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(price)
+    }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(price / 100) // Assuming cents for non-VND currencies
   }
 
   const renderPost = (post: Post) => (
@@ -194,7 +325,7 @@ export default function BookDetailScreen({ navigation, route }: any) {
           </View>
         </View>
       </View>
-      <TouchableOpacity style={styles.postPlayButton}>
+      <TouchableOpacity onPress={() => handlePlayPost(post)} style={styles.postPlayButton}>
         <Ionicons name={post.postType === "AUDIO" ? "play" : "eye"} size={16} color="#007AFF" />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -215,6 +346,8 @@ export default function BookDetailScreen({ navigation, route }: any) {
       </View>
     )
   }
+
+  const descriptionStyle = isDescriptionExpanded ? styles.descriptionWrapper : styles.descriptionCollapsed
 
   return (
     <View style={styles.container}>
@@ -276,9 +409,55 @@ export default function BookDetailScreen({ navigation, route }: any) {
               </View>
             </View>
 
-            <Text style={styles.bookDescription}>{book.description}</Text>
+            <View style={styles.descriptionContainer}>
+              <View style={descriptionStyle}>
+                <HTMLContent 
+                  content={book.description}
+                  fontSize={16}
+                />
+              </View>
+              <TouchableOpacity 
+                style={styles.showMoreButton}
+                onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              >
+                <Text style={styles.showMoreText}>
+                  {isDescriptionExpanded ? t('bookDetail.show_less') : t('bookDetail.show_more')}
+                </Text>
+                <Ionicons 
+                  name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color="#007AFF" 
+                />
+              </TouchableOpacity>
+            </View>
 
-            {book.bookType === "AUDIO" && (
+            {!book.isFree && !book.isPurchased ? (
+              <View style={styles.priceContainer}>
+                <View style={styles.priceInfo}>
+                  <Text style={styles.priceLabel}>{t('bookDetail.price')}</Text>
+                  <Text style={styles.bookPrice}>
+                    {localizedPrice || formatPrice(book.price, book.currency)}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.purchaseButton, checkingPurchase && styles.purchaseButtonDisabled]}
+                  onPress={() => setShowPurchaseModal(true)}
+                  disabled={checkingPurchase}
+                >
+                  <Ionicons name="lock-closed" size={16} color="white" style={styles.buttonIcon} />
+                  <Text style={styles.purchaseButtonText}>
+                    {checkingPurchase ? t('purchase.processing') : t('purchase.unlock_book')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : book.isPurchased ? (
+              <View style={styles.purchasedBadge}>
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                <Text style={styles.purchasedText}>{t('purchase.purchased')}</Text>
+              </View>
+            ) : null}
+
+            {book.bookType === "AUDIO" && book.isPurchased && (
               <TouchableOpacity style={styles.downloadButton}>
                 <Ionicons name="download-outline" size={20} color="#007AFF" />
                 <Text style={styles.downloadButtonText}>{t('bookDetail.download_all')}</Text>
@@ -293,6 +472,21 @@ export default function BookDetailScreen({ navigation, route }: any) {
           {book.posts.map(renderPost)}
         </View>
       </ScrollView>
+
+      {/* Purchase Modal */}
+      {book && (
+        <PurchaseModal
+          visible={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+          title={book.title}
+          price={book.price}
+          currency={book.currency}
+          localizedPrice={localizedPrice}
+          iapProductIdAndroid={book.iapProductIdAndroid}
+          iapProductIdIos={book.iapProductIdIos}
+          onPurchaseSuccess={handlePurchase}
+        />
+      )}
     </View>
   )
 }
@@ -382,6 +576,8 @@ const styles = StyleSheet.create({
   bookMeta: {
     flexDirection: "row",
     marginBottom: 15,
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
   bookLevel: {
     backgroundColor: "#e3f2fd",
@@ -409,12 +605,86 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 4,
   },
-  bookDescription: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-    textAlign: "center",
+  descriptionContainer: {
     marginBottom: 20,
+  },
+  descriptionWrapper: {
+    overflow: 'hidden',
+  },
+  descriptionCollapsed: {
+    overflow: 'hidden',
+    maxHeight: 120, // Approximately 5 lines with line height of 24
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    paddingVertical: 4,
+  },
+  showMoreText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  priceContainer: {
+    flexDirection: "column",
+    gap: 12,
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  priceInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    justifyContent: "center",
+  },
+  priceLabel: {
+    fontSize: 16,
+    color: "#666",
+  },
+  bookPrice: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#007AFF",
+  },
+  purchaseButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  purchaseButtonDisabled: {
+    opacity: 0.6,
+  },
+  purchaseButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  purchasedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 15,
+    gap: 8,
+    justifyContent: "center",
+  },
+  purchasedText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#4CAF50",
   },
   downloadButton: {
     flexDirection: "row",
