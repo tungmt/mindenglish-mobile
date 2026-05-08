@@ -28,16 +28,6 @@ export default function ProfileEditScreen({ navigation }: any) {
     avatar: user?.avatar || "",
   })
 
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  })
-
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-
   const requestPermission = async () => {
     if (Platform.OS !== "web") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -120,44 +110,7 @@ export default function ProfileEditScreen({ navigation }: any) {
     }
   }
 
-  const handleChangePassword = async () => {
-    if (!passwordData.currentPassword || !passwordData.newPassword) {
-      Alert.alert(t('common.error'), t('profileEdit.error_fill_password'))
-      return
-    }
 
-    if (passwordData.newPassword.length < 6) {
-      Alert.alert(t('common.error'), t('profileEdit.error_password_length'))
-      return
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      Alert.alert(t('common.error'), t('profileEdit.error_passwords_match'))
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await apiService.changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-      })
-
-      if (response.success) {
-        Alert.alert(t('common.success'), t('profileEdit.success_password'))
-        setPasswordData({
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        })
-      }
-    } catch (error: any) {
-      console.log("Error changing password:", error)
-      Alert.alert("Error", error.message || "Failed to change password")
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <ScrollView style={styles.container}>
@@ -231,67 +184,6 @@ export default function ProfileEditScreen({ navigation }: any) {
           disabled={loading}
         >
           <Text style={styles.buttonText}>{loading ? t('profileEdit.updating') : t('profileEdit.update')}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Change Password Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('profileEdit.change_password_title')}</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('profileEdit.current_password')}</Text>
-          <View style={styles.passwordInput}>
-            <TextInput
-              style={styles.passwordField}
-              value={passwordData.currentPassword}
-              onChangeText={(text) => setPasswordData({ ...passwordData, currentPassword: text })}
-              placeholder={t('profileEdit.current_password_placeholder')}
-              secureTextEntry={!showCurrentPassword}
-            />
-            <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
-              <Ionicons name={showCurrentPassword ? "eye-off" : "eye"} size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('profileEdit.new_password')}</Text>
-          <View style={styles.passwordInput}>
-            <TextInput
-              style={styles.passwordField}
-              value={passwordData.newPassword}
-              onChangeText={(text) => setPasswordData({ ...passwordData, newPassword: text })}
-              placeholder={t('profileEdit.new_password_placeholder')}
-              secureTextEntry={!showNewPassword}
-            />
-            <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
-              <Ionicons name={showNewPassword ? "eye-off" : "eye"} size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('profileEdit.confirm_password')}</Text>
-          <View style={styles.passwordInput}>
-            <TextInput
-              style={styles.passwordField}
-              value={passwordData.confirmPassword}
-              onChangeText={(text) => setPasswordData({ ...passwordData, confirmPassword: text })}
-              placeholder={t('profileEdit.confirm_password_placeholder')}
-              secureTextEntry={!showConfirmPassword}
-            />
-            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-              <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.button, styles.buttonSecondary, loading && styles.buttonDisabled]}
-          onPress={handleChangePassword}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>{loading ? t('profileEdit.changing') : t('profileEdit.change')}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -398,29 +290,12 @@ const styles = StyleSheet.create({
     color: "#999",
     marginTop: 4,
   },
-  passwordInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-  },
-  passwordField: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-    color: "#333",
-  },
   button: {
     backgroundColor: "#007AFF",
     borderRadius: 8,
     padding: 16,
     alignItems: "center",
     marginTop: 10,
-  },
-  buttonSecondary: {
-    backgroundColor: "#34C759",
   },
   buttonDisabled: {
     opacity: 0.6,

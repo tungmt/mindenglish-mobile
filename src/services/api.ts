@@ -319,7 +319,7 @@ class ApiService {
   async checkCoursePurchase(courseId: string): Promise<{ purchased: boolean; purchase?: Purchase }> {
     try {
       const purchases = await this.getPurchases()
-      const coursePurchase = purchases.find(p => p.courseId === courseId && p.status === 'ACTIVE')
+      const coursePurchase = purchases.find(p => p.courseId === courseId && p.status === 'COMPLETED')
       return {
         purchased: !!coursePurchase,
         purchase: coursePurchase,
@@ -333,7 +333,7 @@ class ApiService {
   async checkBookPurchase(bookId: string): Promise<{ purchased: boolean; purchase?: Purchase }> {
     try {
       const purchases = await this.getPurchases()
-      const bookPurchase = purchases.find(p => p.bookId === bookId && p.status === 'ACTIVE')
+      const bookPurchase = purchases.find(p => p.bookId === bookId && p.status === 'COMPLETED')
       return {
         purchased: !!bookPurchase,
         purchase: bookPurchase,
@@ -358,4 +358,172 @@ class ApiService {
   }
 }
 
-export const apiService = new ApiService()
+// Lazy initialization - instance is created only on first access
+// This avoids any code execution during module evaluation
+let instance: ApiService | null = null
+
+export const apiService = {
+  // Auth APIs
+  login: (...args: Parameters<ApiService['login']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.login(...args)
+  },
+  register: (...args: Parameters<ApiService['register']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.register(...args)
+  },
+  sendVerificationCode: (...args: Parameters<ApiService['sendVerificationCode']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.sendVerificationCode(...args)
+  },
+  resetPassword: (...args: Parameters<ApiService['resetPassword']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.resetPassword(...args)
+  },
+  verifyEmail: (...args: Parameters<ApiService['verifyEmail']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.verifyEmail(...args)
+  },
+  resendVerification: (...args: Parameters<ApiService['resendVerification']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.resendVerification(...args)
+  },
+  
+  // User Profile APIs
+  getUserProfile: (...args: Parameters<ApiService['getUserProfile']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getUserProfile(...args)
+  },
+  updateProfile: (...args: Parameters<ApiService['updateProfile']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.updateProfile(...args)
+  },
+  changePassword: (...args: Parameters<ApiService['changePassword']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.changePassword(...args)
+  },
+  uploadAvatar: (...args: Parameters<ApiService['uploadAvatar']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.uploadAvatar(...args)
+  },
+  
+  // Course APIs
+  getCourses: (...args: Parameters<ApiService['getCourses']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getCourses(...args)
+  },
+  getCourseById: (...args: Parameters<ApiService['getCourseById']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getCourseById(...args)
+  },
+  
+  // Book APIs
+  getBooks: (...args: Parameters<ApiService['getBooks']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getBooks(...args)
+  },
+  getBookById: (...args: Parameters<ApiService['getBookById']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getBookById(...args)
+  },
+  
+  // Post APIs
+  getPosts: (...args: Parameters<ApiService['getPosts']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getPosts(...args)
+  },
+  getPostById: (...args: Parameters<ApiService['getPostById']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getPostById(...args)
+  },
+  
+  // Progress APIs
+  getUserProgress: (...args: Parameters<ApiService['getUserProgress']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getUserProgress(...args)
+  },
+  updateProgress: (...args: Parameters<ApiService['updateProgress']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.updateProgress(...args)
+  },
+  
+  // Favorites APIs
+  getFavorites: (...args: Parameters<ApiService['getFavorites']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getFavorites(...args)
+  },
+  addFavorite: (...args: Parameters<ApiService['addFavorite']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.addFavorite(...args)
+  },
+  removeFavorite: (...args: Parameters<ApiService['removeFavorite']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.removeFavorite(...args)
+  },
+  
+  // Comments APIs
+  getComments: (...args: Parameters<ApiService['getComments']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getComments(...args)
+  },
+  getCommentById: (...args: Parameters<ApiService['getCommentById']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getCommentById(...args)
+  },
+  createComment: (...args: Parameters<ApiService['createComment']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.createComment(...args)
+  },
+  updateComment: (...args: Parameters<ApiService['updateComment']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.updateComment(...args)
+  },
+  deleteComment: (...args: Parameters<ApiService['deleteComment']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.deleteComment(...args)
+  },
+  
+  // Notes APIs
+  getNotes: (...args: Parameters<ApiService['getNotes']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getNotes(...args)
+  },
+  getNoteById: (...args: Parameters<ApiService['getNoteById']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getNoteById(...args)
+  },
+  createNote: (...args: Parameters<ApiService['createNote']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.createNote(...args)
+  },
+  updateNote: (...args: Parameters<ApiService['updateNote']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.updateNote(...args)
+  },
+  deleteNote: (...args: Parameters<ApiService['deleteNote']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.deleteNote(...args)
+  },
+  
+  // Purchases APIs
+  getPurchases: (...args: Parameters<ApiService['getPurchases']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.getPurchases(...args)
+  },
+  checkCoursePurchase: (...args: Parameters<ApiService['checkCoursePurchase']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.checkCoursePurchase(...args)
+  },
+  checkBookPurchase: (...args: Parameters<ApiService['checkBookPurchase']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.checkBookPurchase(...args)
+  },
+  createPurchase: (...args: Parameters<ApiService['createPurchase']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.createPurchase(...args)
+  },
+  verifyPurchase: (...args: Parameters<ApiService['verifyPurchase']>) => {
+    if (!instance) instance = new ApiService()
+    return instance.verifyPurchase(...args)
+  },
+}

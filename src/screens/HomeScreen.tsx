@@ -6,7 +6,6 @@ import { FontAwesome6, Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 import { useAudio } from "../context/AudioContext"
-import { apiService } from "../services/api"
 import images from "../constants/images"
 
 const { width } = Dimensions.get("window")
@@ -49,11 +48,12 @@ export default function HomeScreen({ navigation }: any) {
 
   useEffect(() => {
     loadHomeData()
-    checkForCelebration()
+    // checkForCelebration()
   }, [])
 
   const loadHomeData = async () => {
     try {
+      const { apiService } = await import("../services/api")
       // Load user progress for statistics only
       const progressData = await apiService.getUserProgress()
 
@@ -123,14 +123,14 @@ export default function HomeScreen({ navigation }: any) {
     }
   }
 
-  const checkForCelebration = () => {
-    // Check if user just completed a lesson
-    const lastCompletedLesson = "Ngày 4"
-    if (lastCompletedLesson) {
-      setShowCelebration(true)
-      setTimeout(() => setShowCelebration(false), 3000)
-    }
-  }
+  // const checkForCelebration = () => {
+  //   // Check if user just completed a lesson
+  //   const lastCompletedLesson = "Ngày 4"
+  //   if (lastCompletedLesson) {
+  //     setShowCelebration(true)
+  //     setTimeout(() => setShowCelebration(false), 3000)
+  //   }
+  // }
 
   const getGreeting = () => {
     const hour = new Date().getHours()

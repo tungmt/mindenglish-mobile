@@ -174,7 +174,7 @@ export default function ProfileScreen({ navigation }: any) {
           <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
 
-        <TouchableOpacity style={styles.editProfileButton}>
+        <TouchableOpacity onPress={() => navigation.navigate("ProfileEditScreen")} style={styles.editProfileButton}>
           <Ionicons name="pencil" size={16} color="#007AFF" />
           <Text style={styles.editProfileText}>{t('common.edit')}</Text>
         </TouchableOpacity>

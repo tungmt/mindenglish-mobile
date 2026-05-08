@@ -31,6 +31,8 @@ import { AuthProvider, useAuth } from "./src/context/AuthContext"
 import { AudioProvider } from "./src/context/AudioContext"
 import Tabbar from "./src/components/Tabbar"
 import { SafeAreaProvider } from "react-native-safe-area-context"
+import ProfileEditScreen from "./src/screens/ProfileEditScreen"
+import PasswordChangeScreen from "./src/screens/PasswordChangeScreen"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -105,6 +107,8 @@ function AppNavigator({ navigationRef, currentRouteName }) {
                 <Stack.Screen name="Progress" component={ProgressScreen} />
                 <Stack.Screen name="Settings" component={SettingsScreen} />
                 <Stack.Screen name="Support" component={SupportScreen} />
+                <Stack.Screen name="ProfileEditScreen" component={ProfileEditScreen} />
+                <Stack.Screen name="PasswordChange" component={PasswordChangeScreen} />
               </>
             )}
           </>

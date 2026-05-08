@@ -101,6 +101,25 @@ export default function SettingsScreen({ navigation }: any) {
             <Switch value={settings.darkMode} onValueChange={(value) => updateSetting("darkMode", value)} />
           </View>
         </View> */}
+
+        {/* Security Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.security')}</Text>
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => navigation.navigate('PasswordChange')}
+          >
+            <View style={styles.settingInfo}>
+              <View style={styles.settingTitleRow}>
+                <Ionicons name="lock-closed" size={20} color="#007AFF" style={styles.icon} />
+                <Text style={styles.settingTitle}>{t('profileEdit.change_password_title')}</Text>
+              </View>
+              <Text style={styles.settingSubtitle}>{t('settings.password_sub')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   )
@@ -188,5 +207,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 2,
+  },
+  settingTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  icon: {
+    marginRight: 8,
   },
 })

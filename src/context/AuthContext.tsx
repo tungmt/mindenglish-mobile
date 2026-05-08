@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // If unauthorized, token is invalid - clear auth data
           if (error.message === "Unauthorized") {
             console.log("Token is invalid, clearing auth data...")
-            await AsyncStorage.removeMany(["user", "token"])
+            await AsyncStorage.multiRemove(["user", "token"])
             setUser(null)
             setNeedsVerification(false)
           } else {
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("⚠️ RevenueCat logout failed (non-blocking):", rcError)
       }
       
-      await AsyncStorage.removeMany(["user", "token"])
+      await AsyncStorage.multiRemove(["user", "token"])
       setUser(null)
       setNeedsVerification(false)
     } catch (error) {
