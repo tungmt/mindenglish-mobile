@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions, Alert, RefreshControl } from "react-native"
 import { FontAwesome6, Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 import { useAudio } from "../context/AudioContext"
 import images from "../constants/images"
+import { apiService } from "../services/api"
 
 const { width } = Dimensions.get("window")
 
@@ -53,7 +54,6 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadHomeData = async () => {
     try {
-      const { apiService } = await import("../services/api")
       // Load user progress for statistics only
       const progressData = await apiService.getUserProgress()
 
@@ -101,7 +101,6 @@ export default function HomeScreen({ navigation }: any) {
       // If unauthorized, token is invalid - logout user
       if (error.message === "Unauthorized") {
         console.log("Token is invalid, logging out user...")
-        const { Alert } = await import('react-native')
         Alert.alert(
           t('common.error'),
           "Your session has expired. Please log in again.",
@@ -205,7 +204,12 @@ export default function HomeScreen({ navigation }: any) {
   )
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} 
+      refreshControl={<RefreshControl 
+        refreshing={false}
+        onRefresh={loadHomeData}
+      />}
+    showsVerticalScrollIndicator={false}>
       {false && showCelebration && (
         <View style={styles.celebrationOverlay}>
           <View style={styles.celebrationModal}>
@@ -239,13 +243,11 @@ export default function HomeScreen({ navigation }: any) {
           </View>
           <TouchableOpacity style={styles.continueCard} onPress={() => navigation.navigate("AudioPlayer")}>
             <Image
-              source={{
-                uri: `/placeholder.svg?height=60&width=60&text=${encodeURIComponent(currentTrack.title.slice(0, 3))}`,
-              }}
+              source={images.appIcon}
               style={styles.continueImage}
             />
             <View style={styles.continueInfo}>
-              <Text style={styles.continueTitle}>{currentTrack.title}</Text>
+              <Text style={styles.continueTitle} numberOfLines={2}>{currentTrack.title}</Text>
               <Text style={styles.continueSubtitle}>{t('home.tap_to_continue')}</Text>
             </View>
             <View style={styles.continueButton}>

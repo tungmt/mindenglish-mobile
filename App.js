@@ -95,7 +95,8 @@ function AppNavigator({ navigationRef, currentRouteName }) {
                   name="AudioPlayer"
                   component={AudioPlayerScreen}
                   options={{
-                    presentation: "modal",
+                    animation: "slide_from_bottom",
+                    // presentation: "modal",
                     // gestureEnabled: true,
                     // cardOverlayEnabled: true,
                   }}

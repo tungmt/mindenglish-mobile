@@ -63,15 +63,17 @@ export default function ProfileEditScreen({ navigation }: any) {
   const uploadAvatar = async (asset: any) => {
     try {
       setUploadingAvatar(true)
+
+      const filenameFromUri = asset.uri?.split("/").pop()
       
       const file = {
         uri: asset.uri,
-        type: asset.type || "image/jpeg",
-        name: asset.fileName || "avatar.jpg",
+        type: asset.mimeType || "image/jpeg",
+        name: asset.fileName || filenameFromUri || "avatar.jpg",
       }
 
       const response = await apiService.uploadAvatar(file)
-      setProfileData({ ...profileData, avatar: response.avatarUrl })
+      setProfileData((current) => ({ ...current, avatar: response.avatarUrl }))
       
       Alert.alert(t('common.success'), t('profileEdit.success_profile') + ' Avatar uploaded')
     } catch (error: any) {

@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useAudio } from "../context/AudioContext"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRoute } from "@react-navigation/native"
+import images from "../constants/images"
 
 interface FloatingAudioPlayerProps {
   onPress: () => void,
@@ -43,9 +44,7 @@ export default function FloatingAudioPlayer({ onPress, currentScreenName }: Floa
 
       <View style={styles.content}>
         <Image
-          source={{
-            uri: `/placeholder.svg?height=40&width=40&text=${encodeURIComponent(currentTrack.title.slice(0, 2))}`,
-          }}
+          source={images.appIcon}
           style={styles.thumbnail}
         />
 
@@ -83,6 +82,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     overflow: "hidden",
+    borderColor: "#e0e0e0",
+    borderWidth: 1,
   },
   progressBar: {
     height: 2,

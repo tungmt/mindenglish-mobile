@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../context/AuthContext"
 import { apiService } from "../services/api"
+import images from "../constants/images"
 
 interface ProfileStats {
   totalListeningTime: number
@@ -159,14 +160,12 @@ export default function ProfileScreen({ navigation }: any) {
       <View style={styles.userSection}>
         <View style={styles.avatarContainer}>
           <Image
-            source={{
-              uri: user?.avatar || "/placeholder.svg?height=80&width=80&text=User",
-            }}
+            source={user?.avatar ? { uri: user.avatar } : images.appIcon}
             style={styles.avatar}
           />
-          <TouchableOpacity style={styles.editAvatarButton}>
+          {/* <TouchableOpacity style={styles.editAvatarButton}>
             <Ionicons name="camera" size={16} color="white" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <View style={styles.userInfo}>
@@ -259,6 +258,11 @@ export default function ProfileScreen({ navigation }: any) {
             <Ionicons name="chevron-forward" size={16} color="#ccc" />
           </TouchableOpacity>
         ))}
+
+        <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount} disabled={loading}>
+          <Ionicons name="trash-outline" size={15} color="#666" />
+          <Text style={styles.deleteText}>{loading ? t('profile.deleting') : t('profile.delete_account')}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Account Actions */}
@@ -266,11 +270,6 @@ export default function ProfileScreen({ navigation }: any) {
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
           <Text style={styles.logoutText}>{t('profile.sign_out')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount} disabled={loading}>
-          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-          <Text style={styles.deleteText}>{loading ? t('profile.deleting') : t('profile.delete_account')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -530,16 +529,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff5f5",
+    // backgroundColor: "#fff5f5",
     marginHorizontal: 20,
     borderRadius: 12,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: "#FF3B30",
+    paddingHorizontal: 15,
+    paddingVertical: 3,
+    marginTop: 12,
+    marginBottom: 16
+    // borderWidth: 1,
+    // borderColor: "#FF3B30",
   },
   deleteText: {
-    color: "#FF3B30",
-    fontSize: 16,
+    color: "#666",
+    fontSize: 13,
     fontWeight: "600",
     marginLeft: 8,
   },

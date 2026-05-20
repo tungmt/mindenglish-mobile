@@ -255,7 +255,7 @@ export interface Purchase {
   price: number;
   currency: string;
   transactionId: string;
-  status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  status: "PENDING" | "ACTIVE" | "EXPIRED" | "REFUNDED";
   source: "STRIPE" | "APPLE_IAP" | "GOOGLE_IAP";
   createdAt: string;
   updatedAt: string;

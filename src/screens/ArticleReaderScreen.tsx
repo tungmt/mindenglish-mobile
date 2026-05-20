@@ -53,7 +53,6 @@ export default function ArticleReaderScreen({ navigation, route }: ArticleReader
     try {
       setLoading(true)
       // Import and fetch post from API
-      const { apiService } = await import("../services/api")
       const postData = await apiService.getPostById(postId)
 
       console.log('ArticleReaderScreen - Loaded post:', postData.id, postData.title)
@@ -67,7 +66,6 @@ export default function ArticleReaderScreen({ navigation, route }: ArticleReader
       })
     } catch (error: any) {
       console.log("Error loading article:", error)
-      const { Alert } = await import('react-native')
       Alert.alert(
         t('common.error'), 
         error?.message || t('articleReader.error_loading'),

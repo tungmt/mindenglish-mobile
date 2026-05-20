@@ -18,10 +18,7 @@ import { Ionicons } from "@expo/vector-icons"
 import Slider from "@react-native-community/slider"
 import { useTranslation } from "react-i18next"
 import { useAudio } from "../context/AudioContext"
-
-const { width, height } = Dimensions.get("window")
-const PLAYER_MAX_HEIGHT = 520
-const PLAYER_MIN_HEIGHT = 80
+import images from "../constants/images"
 
 interface Comment {
   id: string
@@ -63,14 +60,15 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
     likeComment,
   } = useAudio()
 
-  const [activeTab, setActiveTab] = useState<"transcript" | "notes" | "comments" | "playlist">("transcript")
+  const [activeTab, setActiveTab] = useState<"notes" | "comments" | "playlist">("playlist")
   const [showSpeedModal, setShowSpeedModal] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showCommentInput, setShowCommentInput] = useState(false)
   const [isPlayerMinimized, setIsPlayerMinimized] = useState(false)
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false)
 
   const scrollY = useRef(new Animated.Value(0)).current
-  const playerHeight = useRef(new Animated.Value(PLAYER_MAX_HEIGHT)).current
+  const mainScrollRef = useRef<ScrollView | null>(null)
 
   const playbackSpeeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
 
@@ -87,39 +85,18 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
       useNativeDriver: false,
       listener: (event: any) => {
         const offsetY = event.nativeEvent.contentOffset.y
-        if (offsetY > 50 && !isPlayerMinimized) {
-          minimizePlayer()
-        } else if (offsetY <= 10 && isPlayerMinimized) {
-          expandPlayer()
+
+        if (offsetY > 280 && !showScrollTopButton) {
+          setShowScrollTopButton(true)
+        } else if (offsetY <= 280 && showScrollTopButton) {
+          setShowScrollTopButton(false)
         }
       },
     }
   )
 
-  const minimizePlayer = () => {
-    setIsPlayerMinimized(true)
-    Animated.timing(playerHeight, {
-      toValue: PLAYER_MIN_HEIGHT,
-      duration: 300,
-      useNativeDriver: false,
-    }).start()
-  }
-
-  const expandPlayer = () => {
-    setIsPlayerMinimized(false)
-    Animated.timing(playerHeight, {
-      toValue: PLAYER_MAX_HEIGHT,
-      duration: 300,
-      useNativeDriver: false,
-    }).start()
-  }
-
-  const togglePlayerSize = () => {
-    if (isPlayerMinimized) {
-      expandPlayer()
-    } else {
-      minimizePlayer()
-    }
+  const handleScrollToTop = () => {
+    mainScrollRef.current?.scrollTo({ y: 0, animated: true })
   }
 
   const formatTime = (milliseconds: number) => {
@@ -238,27 +215,8 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
     )
   }
 
-  const imageOpacity = playerHeight.interpolate({
-    inputRange: [PLAYER_MIN_HEIGHT, PLAYER_MAX_HEIGHT],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  })
-
-  const controlsOpacity = playerHeight.interpolate({
-    inputRange: [PLAYER_MIN_HEIGHT, PLAYER_MAX_HEIGHT * 0.4],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  })
-
-  const miniPlayerOpacity = playerHeight.interpolate({
-    inputRange: [PLAYER_MIN_HEIGHT, PLAYER_MAX_HEIGHT * 0.3],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  })
-
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-down" size={24} color="#333" />
@@ -267,44 +225,28 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
           {currentTrack.title}
         </Text>
         <TouchableOpacity onPress={() => { }}>
-          <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
+          {/* <Ionicons name="ellipsis-horizontal" size={24} color="#333" /> */}
         </TouchableOpacity>
       </View>
 
+      <Animated.ScrollView
+        ref={mainScrollRef}
+        contentContainerStyle={styles.screenScrollContainer}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={true}
+      >
+
       {/* Collapsible Player Section */}
-      <Animated.View style={[styles.playerSection, { height: playerHeight }]}>
-        <TouchableOpacity 
-          activeOpacity={0.9} 
-          onPress={togglePlayerSize}
+      <Animated.View style={[styles.playerSection]}>
+        <View
           style={styles.playerTouchable}
         >
-          {/* Minimized Player */}
-          <Animated.View style={[styles.miniPlayer, { opacity: miniPlayerOpacity }]}>
-            <Image
-              source={{ uri: `/placeholder.svg?height=60&width=60&text=${encodeURIComponent(currentTrack.title)}` }}
-              style={styles.miniPlayerImage}
-            />
-            <View style={styles.miniPlayerInfo}>
-              <Text style={styles.miniPlayerTitle} numberOfLines={1}>{currentTrack.title}</Text>
-              <Text style={styles.miniPlayerSubtitle}>MindEnglish</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.miniPlayerButton} 
-              onPress={(e) => {
-                e.stopPropagation()
-                handlePlayPause()
-              }}
-            >
-              <Ionicons name={isPlaying ? "pause" : "play"} size={24} color="#007AFF" />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Full Player */}
-          <Animated.View style={[styles.fullPlayer, { opacity: imageOpacity }]}>
+          <Animated.View style={[styles.fullPlayer, { opacity: 1 }]}>
             {/* Audio Info */}
             <View style={styles.audioInfo}>
               <Image
-                source={{ uri: `/placeholder.svg?height=200&width=200&text=${encodeURIComponent(currentTrack.title)}` }}
+                source={images.appIcon}
                 style={styles.audioImage}
               />
               <Text style={styles.audioTitle}>{currentTrack.title}</Text>
@@ -317,7 +259,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
             </View>
 
             {/* Progress Bar */}
-            <Animated.View style={[styles.progressContainer, { opacity: controlsOpacity }]}>
+            <Animated.View style={[styles.progressContainer, { opacity: 1 }]}>
               <Slider
                 style={styles.progressSlider}
                 minimumValue={0}
@@ -335,7 +277,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
             </Animated.View>
 
             {/* Controls */}
-            <Animated.View style={[styles.controls, { opacity: controlsOpacity }]}>
+            <Animated.View style={[styles.controls, { opacity: 1 }]}>
               <TouchableOpacity 
                 style={styles.controlButton} 
                 onPress={playPrevious}
@@ -376,7 +318,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
             </Animated.View>
 
             {/* Speed and Actions */}
-            <Animated.View style={[styles.actionsRow, { opacity: controlsOpacity }]}>
+            <Animated.View style={[styles.actionsRow, { opacity: 1 }]}>
               <TouchableOpacity style={styles.actionButton} onPress={() => setShowSpeedModal(true)}>
                 <Text style={styles.speedText}>{playbackRate}x</Text>
               </TouchableOpacity>
@@ -420,17 +362,17 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
-        </TouchableOpacity>
+        </View>
       </Animated.View>
 
       {/* Tabs */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[styles.tab, activeTab === "transcript" && styles.activeTab]}
           onPress={() => setActiveTab("transcript")}
         >
           <Text style={[styles.tabText, activeTab === "transcript" && styles.activeTabText]}>{t('audioPlayer.transcript')}</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         {playlist.length > 0 && (
           <TouchableOpacity
             style={[styles.tab, activeTab === "playlist" && styles.activeTab]}
@@ -441,7 +383,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
             </Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[styles.tab, activeTab === "notes" && styles.activeTab]}
           onPress={() => setActiveTab("notes")}
         >
@@ -454,25 +396,19 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
           <Text style={[styles.tabText, activeTab === "comments" && styles.activeTabText]}>
             {t('audioPlayer.comments', { count: comments.length })}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Scrollable Content */}
-      <Animated.ScrollView
-        style={styles.contentScrollView}
-        contentContainerStyle={styles.contentScrollContainer}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={true}
-      >
-        {activeTab === "transcript" && (
+      <View style={styles.contentContainer}>
+        {/* {activeTab === "transcript" && (
           <View style={styles.transcriptContainer}>
             <Text style={styles.transcriptText}>
               {currentTrack.transcript ||
                 t('audioPlayer.transcript_placeholder')}
             </Text>
           </View>
-        )}
+        )} */}
 
         {activeTab === "playlist" && (
           <View style={styles.playlistContainer}>
@@ -552,7 +488,7 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
             )}
           </View>
         )}
-      </Animated.ScrollView>
+      </View>
 
       {/* Comment Input */}
       {activeTab === "comments" && (
@@ -586,6 +522,13 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
           )}
         </View>
       )}
+      </Animated.ScrollView>
+
+      {showScrollTopButton && (
+        <TouchableOpacity style={styles.scrollToTopButton} onPress={handleScrollToTop}>
+          <Ionicons name="arrow-up" size={22} color="white" />
+        </TouchableOpacity>
+      )}
 
       {/* Speed Modal */}
       <Modal visible={showSpeedModal} transparent animationType="slide">
@@ -617,7 +560,10 @@ export default function AudioPlayerScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "white",
+  },
+  screenScrollContainer: {
+    paddingBottom: 20,
   },
   header: {
     flexDirection: "row",
@@ -626,7 +572,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "white",
   },
   headerTitle: {
     fontSize: 16,
@@ -636,50 +582,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginHorizontal: 20,
   },
-  playerSection: {
-    backgroundColor: "#f8f9fa",
-    overflow: "hidden",
-  },
+    playerSection: {
+      backgroundColor: "white",
+      overflow: "hidden",
+    },
   playerTouchable: {
     flex: 1,
-  },
-  miniPlayer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: PLAYER_MIN_HEIGHT,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  miniPlayerImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  miniPlayerInfo: {
-    flex: 1,
-  },
-  miniPlayerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  miniPlayerSubtitle: {
-    fontSize: 14,
-    color: "#666",
-  },
-  miniPlayerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
   },
   fullPlayer: {
     flex: 1,
@@ -691,8 +599,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   audioImage: {
-    width: 180,
-    height: 180,
+    width: 90,
+    height: 90,
     borderRadius: 12,
     marginBottom: 20,
   },
@@ -808,10 +716,7 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: "white",
   },
-  contentScrollView: {
-    flex: 1,
-  },
-  contentScrollContainer: {
+  contentContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
@@ -1070,5 +975,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#999",
     marginTop: 12,
+  },
+  scrollToTopButton: {
+    position: "absolute",
+    right: 20,
+    bottom: 24,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
 })

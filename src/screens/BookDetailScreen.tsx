@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Alert, Platform } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Alert, Platform, RefreshControl } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAudio } from "../context/AudioContext"
 import { useTranslation } from "react-i18next"
 import { HTMLContent } from "../components/HTMLContent"
 import { PurchaseModal } from "../components/PurchaseModal"
 import { revenueCatService } from "../services/revenueCat"
+import { apiService } from "../services/api"
 
 interface Book {
   id: string
@@ -62,7 +63,6 @@ export default function BookDetailScreen({ navigation, route }: any) {
     try {
       setLoading(true)
       // Import and fetch book from API
-      const { apiService } = await import("../services/api")
       const bookData = await apiService.getBookById(bookId)
 
       console.log('BookDetailScreen - Loaded book:', bookData.id, bookData.title)
@@ -71,6 +71,8 @@ export default function BookDetailScreen({ navigation, route }: any) {
       let isPurchased = true // Default to true for free books
       if (!bookData.isFree && (bookData.price ?? 0) > 0) {
         const purchaseCheck = await apiService.checkBookPurchase(bookId)
+
+        console.log({purchaseCheck})
         isPurchased = purchaseCheck.purchased
       }
 
@@ -358,11 +360,11 @@ export default function BookDetailScreen({ navigation, route }: any) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('bookDetail.title')}</Text>
         <TouchableOpacity>
-          <Ionicons name="share-outline" size={24} color="#333" />
+          {/* <Ionicons name="share-outline" size={24} color="#333" /> */}
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={loadBookDetail} />}>
         {/* Book Info */}
         <View style={styles.bookInfo}>
           <Image source={{ uri: book.thumbnail }} style={styles.bookCover} />

@@ -21,6 +21,8 @@ export default function AuthScreen({ navigation }: any) {
   const { t } = useTranslation()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  // const [email, setEmail] = useState("test@mindenglish.vn")
+  // const [password, setPassword] = useState("Hanoi@2026")
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const { login } = useAuth()

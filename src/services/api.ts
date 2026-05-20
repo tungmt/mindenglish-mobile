@@ -41,6 +41,8 @@ class ApiService {
   private async makeRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = await this.getAuthToken()
 
+    console.log({token, endpoint})
+
     const config: RequestInit = {
       ...options,
       headers: {
@@ -319,7 +321,7 @@ class ApiService {
   async checkCoursePurchase(courseId: string): Promise<{ purchased: boolean; purchase?: Purchase }> {
     try {
       const purchases = await this.getPurchases()
-      const coursePurchase = purchases.find(p => p.courseId === courseId && p.status === 'COMPLETED')
+      const coursePurchase = purchases.find(p => p.courseId === courseId && p.status === 'ACTIVE')
       return {
         purchased: !!coursePurchase,
         purchase: coursePurchase,
@@ -333,7 +335,7 @@ class ApiService {
   async checkBookPurchase(bookId: string): Promise<{ purchased: boolean; purchase?: Purchase }> {
     try {
       const purchases = await this.getPurchases()
-      const bookPurchase = purchases.find(p => p.bookId === bookId && p.status === 'COMPLETED')
+      const bookPurchase = purchases.find(p => p.bookId === bookId && p.status === 'ACTIVE')
       return {
         purchased: !!bookPurchase,
         purchase: bookPurchase,

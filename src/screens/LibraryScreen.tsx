@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import images from "../constants/images"
+import { apiService } from "../services/api"
 
 const { width } = Dimensions.get("window")
 
@@ -76,7 +77,6 @@ export default function LibraryScreen({ navigation }: any) {
     try {
       setLoading(true)
       // Import the API service
-      const { apiService } = await import("../services/api")
 
       // Load books and courses from API
       const [booksResponse, coursesResponse] = await Promise.all([

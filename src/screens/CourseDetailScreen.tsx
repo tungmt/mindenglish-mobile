@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Alert } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Alert, RefreshControl } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { apiService } from "../services/api"
 import { useAudio } from "../context/AudioContext"
@@ -78,8 +78,10 @@ export default function CourseDetailScreen({ navigation, route }: any) {
       
       // Check if user has purchased this course (if it's paid)
       let isPurchased = true // Default to true for free courses
+      console.log({courseData})
       if (!courseData.isFree && courseData.price > 0) {
         const purchaseCheck = await apiService.checkCoursePurchase(courseId)
+        console.log({purchaseCheck})
         isPurchased = purchaseCheck.purchased
       }
       
@@ -356,7 +358,7 @@ export default function CourseDetailScreen({ navigation, route }: any) {
           )}
         </View>
       </View>
-      <TouchableOpacity style={styles.lessonPlayButton}>
+      <TouchableOpacity onPress={() => handlePlayPost(post, book)} style={styles.lessonPlayButton}>
         <Ionicons
           name={post.isLocked ? "lock-closed" : post.postType === "AUDIO" ? "play" : "eye"}
           size={20}
@@ -422,11 +424,11 @@ export default function CourseDetailScreen({ navigation, route }: any) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('courseDetail.title')}</Text>
         <TouchableOpacity>
-          <Ionicons name="share-outline" size={24} color="#333" />
+          {/* <Ionicons name="share-outline" size={24} color="#333" /> */}
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={loadCourseDetail} />}>
         {/* Course Info */}
         <View style={styles.courseInfo}>
           <Image source={{ uri: course.thumbnail }} style={styles.courseImage} />

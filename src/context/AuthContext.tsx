@@ -105,8 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiService.login({ email, password })
       setUser(response.user)
-      await AsyncStorage.setItem("user", JSON.stringify(response.user))
-      await AsyncStorage.setItem("token", response.token)
+      // await AsyncStorage.setItem("user", JSON.stringify(response.user))
+      // await AsyncStorage.setItem("token", response.token)
+
+      await AsyncStorage.multiSet([
+         ["user", JSON.stringify(response.user)],
+        ["token", response.token],
+      ])
       
       // Initialize RevenueCat with user ID
       try {
